@@ -132,7 +132,7 @@ tests.test_optimize(optimize)
 #%%
 
 def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image,
-             correct_label, keep_prob, learning_rate):
+             correct_label, _keep_prob, _learning_rate):
     """
     Train neural network and print out the loss during training.
     :param sess: TF Session
@@ -146,6 +146,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     :param keep_prob: TF Placeholder for dropout keep probability
     :param learning_rate: TF Placeholder for learning rate
     """
+    
     sess.run(tf.global_variables_initializer())
     #lr = sess.run(learning_rate)
     
@@ -154,7 +155,8 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         for image, label in get_batches_fn(batch_size):
             summary, loss = sess.run([train_op, cross_entropy_loss],
                                      feed_dict={input_image:image, correct_label:label,
-                                     keep_prob:0.5, learning_rate:0.005})
+                                     keep_prob:_keep_prob, 
+                                     learning_rate:_learning_rate})
         print(" Loss = {:.4f}".format(loss))     
         print()                        
         
@@ -163,6 +165,11 @@ tests.test_train_nn(train_nn)
 
 #%%
 tf.reset_default_graph();
+
+input_image = tf.placeholder(tf.float32, name='input_image')
+correct_label = tf.placeholder(tf.float32, name='correct_label')
+keep_prob = tf.placeholder(tf.float32, name='keep_prob')
+learning_rate = tf.placeholder(tf.float32, name='learning_rate')
 
 def run():
     num_classes = 2

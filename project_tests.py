@@ -109,7 +109,7 @@ def test_optimize(optimize):
 
     assert test.min() != 0 or test.max() != 0, 'Training operation not changing weights.'
 
-
+#%%
 @test_safe
 def test_train_nn(train_nn):
     epochs = 1
@@ -135,11 +135,11 @@ def test_train_nn(train_nn):
             'cross_entropy_loss': cross_entropy_loss,
             'input_image': input_image,
             'correct_label': correct_label,
-            'keep_prob': keep_prob,
-            'learning_rate': learning_rate}
+            '_keep_prob': 0.5,
+            '_learning_rate': 1e-3}
         _prevent_print(train_nn, parameters)
 
-
+#%%
 @test_safe
 def test_for_kitti_dataset(data_dir):
     kitti_dataset_path = os.path.join(data_dir, 'data_road')
