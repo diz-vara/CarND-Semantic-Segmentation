@@ -155,7 +155,8 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
             summary, loss = sess.run([train_op, cross_entropy_loss],
                                      feed_dict={input_image:image, correct_label:label,
                                      keep_prob:0.5, learning_rate:0.005})
-        print(" Loss = {:.4f}".format(loss))                             
+        print(" Loss = {:.4f}".format(loss))     
+        print()                        
         
     
 tests.test_train_nn(train_nn)
@@ -194,20 +195,21 @@ def run():
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
 
-        image_input, keep_prob,l3_o, l4_o, l7_o = load_vgg(sess, vgg_path);
+        image_in, keep_prob,l3_o, l4_o, l7_o = load_vgg(sess, vgg_path);
         nn_output = layers(l3_o, l4_o, l7_o, 2)
 
         logits, train_op, loss = optimize(nn_output, correct_label, 
                                           learning_rate, num_classes)
-
+        print('training')
         train_nn(sess, epochs, batch_size, get_batches_fn, train_op,
-                 loss, image_input, correct_label, keep_prob, learning_rate)                                          
+                 loss, image_in, correct_label, keep_prob, learning_rate)                                          
 
 
-        # TODO: Train NN using the train_nn function
 
         # TODO: Save inference data using helper.save_inference_samples
-        #  helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image)
+        print('SAVING')
+        helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, 
+                                      logits, keep_prob, image_in)
 
         # OPTIONAL: Apply the trained model to a video
 
