@@ -54,27 +54,31 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :param num_classes: Number of classes to classify
     :return: The Tensor for the last layer of output
     """
-    # TODO: Implement function
     
-    # 1x1 convolution of L7
+    # 1x1 convolution of L7 ( 5 x 18 )
     layer_7_conv = tf.layers.conv2d(vgg_layer7_out, num_classes, 1,
                                 padding = 'same',
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                 kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
-                                name='layer_7_conv')
+                                name='layer_7_conv1')
+                                
+    # upscale to 10 x 36
     layer_7_up = tf.layers.conv2d_transpose(layer_7_conv, num_classes, 4,
                                              strides = (2,2),
                                              padding = 'same',
                                              kernel_initializer=tf.random_normal_initializer(stddev=0.01),
                                              name = 'layer_7_up')
                                 
+    # 1x1 convolution of L4 ( 10 x 36 )
     layer_4_conv = tf.layers.conv2d(vgg_layer4_out, num_classes, 1,
                                 padding = 'same',
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01),
-                                name = 'layer_4_conv')
+                                name = 'layer_4_conv1')
 
+    # add upscaled L7
     layer_4_add = tf.add(layer_4_conv, layer_7_up, name = 'layer_4_add')
     
+    # upscale to 20 x 72
     layer_4_up = tf.layers.conv2d_transpose(layer_4_add, num_classes, 4,
                                              strides = (2,2),
                                              padding = 'same',
@@ -82,11 +86,14 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
                                              name = 'layer_4_up')
 
 
+    # 1x1 convolution of L3 ( 20 x 72)
     layer_3_conv = tf.layers.conv2d(vgg_layer3_out, num_classes, 1,
                                 padding = 'same',
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.01),
-                                name = 'layer_3_conv')
+                                name = 'layer_3_conv1')
+    # add upscaled L4                                
     layer_3_add = tf.add(layer_3_conv, layer_4_up, name = 'layer_3_add')
+    # upscale to original 160 x 572
     layer_3_up = tf.layers.conv2d_transpose(layer_3_add, num_classes, 16,
                                              strides = (8,8),
                                              padding = 'same',
@@ -107,10 +114,22 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     :param num_classes: Number of classes to classify
     :return: Tuple of (logits, train_op, cross_entropy_loss)
     """
-    # TODO: Implement function
-    return None, None, None
+    
+    result = tf.reshape(nn_last_layer, (-1, num_classes))
+    labels = tf.reshape(correct_label, (-1, num_classes))
+
+    cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=labels,
+                                                            logits = result,
+                                                            name = "cross-ent")
+    loss = tf.reduce_mean(cross_entropy);
+    optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate) 
+
+    train_op = optimizer.minimize(loss)
+    
+    return result, train_op, loss
 tests.test_optimize(optimize)
 
+#%%
 
 def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image,
              correct_label, keep_prob, learning_rate):
@@ -127,10 +146,22 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     :param keep_prob: TF Placeholder for dropout keep probability
     :param learning_rate: TF Placeholder for learning rate
     """
-    # TODO: Implement function
-    pass
+    sess.run(tf.global_variables_initializer())
+    #lr = sess.run(learning_rate)
+    
+    for epoch in range (epochs):
+        print ('epoch {}  '.format(epoch))
+        for image, label in get_batches_fn(batch_size):
+            summary, loss = sess.run([train_op, cross_entropy_loss],
+                                     feed_dict={input_image:image, correct_label:label,
+                                     keep_prob:0.5, learning_rate:0.005})
+        print(" Loss = {:.4f}".format(loss))                             
+        
+    
 tests.test_train_nn(train_nn)
 
+#%%
+tf.reset_default_graph();
 
 def run():
     num_classes = 2
@@ -152,10 +183,26 @@ def run():
         # Create function to get batches
         get_batches_fn = helper.gen_batch_function(os.path.join(data_dir, 'data_road/training'), image_shape)
 
+        epochs = 20
+        batch_size = 2
+        
+        correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes],
+                                       name = 'correct_label')
+        learning_rate = tf.placeholder(tf.float32, name='learning_rate')                                       
+
         # OPTIONAL: Augment Images for better results
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
-        # TODO: Build NN using load_vgg, layers, and optimize function
+
+        image_input, keep_prob,l3_o, l4_o, l7_o = load_vgg(sess, vgg_path);
+        nn_output = layers(l3_o, l4_o, l7_o, 2)
+
+        logits, train_op, loss = optimize(nn_output, correct_label, 
+                                          learning_rate, num_classes)
+
+        train_nn(sess, epochs, batch_size, get_batches_fn, train_op,
+                 loss, image_input, correct_label, keep_prob, learning_rate)                                          
+
 
         # TODO: Train NN using the train_nn function
 
