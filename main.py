@@ -199,7 +199,7 @@ def run():
     
     
         epochs = 50
-        batch_size = 8
+        batch_size = 2
         
         correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes],
                                        name = 'correct_label')
