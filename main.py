@@ -13,10 +13,10 @@ assert LooseVersion(tf.__version__) >= LooseVersion('1.0'), 'Please use TensorFl
 print('TensorFlow Version: {}'.format(tf.__version__))
 
 # Check for a GPU
-if not tf.test.gpu_device_name():
-    warnings.warn('No GPU found. Please use a GPU to train your neural network.')
-else:
-    print('Default GPU Device: {}'.format(tf.test.gpu_device_name()))
+#if not tf.test.gpu_device_name():
+#    warnings.warn('No GPU found. Please use a GPU to train your neural network.')
+#else:
+#    print('Default GPU Device: {}'.format(tf.test.gpu_device_name()))
 
 #%%
 def load_vgg(sess, vgg_path):
@@ -43,7 +43,7 @@ def load_vgg(sess, vgg_path):
     layer7_out = model.get_tensor_by_name(vgg_layer7_out_tensor_name)
     return input_image, keep_prob,layer3_out, layer4_out, layer7_out
 
-tests.test_load_vgg(load_vgg, tf)
+#tests.test_load_vgg(load_vgg, tf)
 
 #%%
 def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
@@ -102,7 +102,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
                                              name = 'layer_3_up')
                                 
     return layer_3_up
-tests.test_layers(layers)
+#tests.test_layers(layers)
 
 #%%
 
@@ -157,7 +157,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         for image, label in get_batches_fn(batch_size):
             summary, loss = sess.run([train_op, cross_entropy_loss],
                                      feed_dict={input_image:image, correct_label:label,
-                                     keep_prob:0.5, learning_rate:5e-5})
+                                     keep_prob:0.5, learning_rate:5e-6})
         #writer.add_summary(summary, epoch)                             
         print(" Loss = {:.4f}".format(loss))     
         print()                        
@@ -167,11 +167,6 @@ tests.test_train_nn(train_nn)
 
 #%%
 tf.reset_default_graph();
-
-input_image = tf.placeholder(tf.float32, name='input_image')
-correct_label = tf.placeholder(tf.float32, name='correct_label')
-keep_prob = tf.placeholder(tf.float32, name='keep_prob')
-learning_rate = tf.placeholder(tf.float32, name='learning_rate')
 
 def run():
     num_classes = 2
@@ -191,41 +186,46 @@ def run():
     #  https://www.cityscapes-dataset.com/
     builder = tf.saved_model.builder.SavedModelBuilder(export_dir);
 
-    with tf.Session() as sess:
-        # Path to vgg model
+    config = tf.ConfigProto(
+       gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.5),
+       device_count = {'GPU': 1}
+    )
+
+
+    with tf.Session(config=config) as sess:
         vgg_path = os.path.join(data_dir, 'vgg')
         # Create function to get batches
         get_batches_fn = helper.gen_batch_function(os.path.join(data_dir, 'data_road/training'), image_shape)
-
-
+    
+    
         epochs = 50
-        batch_size = 3
+        batch_size = 8
         
         correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes],
                                        name = 'correct_label')
         learning_rate = tf.placeholder(tf.float32, name='learning_rate')                                       
-
+    
         # OPTIONAL: Augment Images for better results
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
-
-
+    
+    
         image_in, keep_prob,l3_o, l4_o, l7_o = load_vgg(sess, vgg_path);
         nn_output = layers(l3_o, l4_o, l7_o, 2)
-
+    
         logits, train_op, loss = optimize(nn_output, correct_label, 
                                           learning_rate, num_classes)
-
+    
         print('training')
         train_nn(sess, epochs, batch_size, get_batches_fn, train_op,
                  loss, image_in, correct_label, keep_prob, learning_rate)                                          
-
-
-
+    
+    
+    
         # TODO: Save inference data using helper.save_inference_samples
         print('Saving results')
         helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, 
                                       logits, keep_prob, image_in)
-
+    
         
         print('Saving net:')
         builder.add_meta_graph_and_variables(sess,
@@ -233,7 +233,6 @@ def run():
         
         writer = tf.summary.FileWriter('/tmp/log/tf', sess.graph)
         writer.close()
-
         # OPTIONAL: Apply the trained model to a video
     print('AFTER sesion')
     builder.save()

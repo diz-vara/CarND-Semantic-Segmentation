@@ -7,6 +7,10 @@ from unittest import mock
 import numpy as np
 import tensorflow as tf
 
+config = tf.ConfigProto(
+   gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.5),
+   device_count = {'GPU': 1}
+)
 
 def test_safe(func):
     """
@@ -102,7 +106,7 @@ def test_optimize(optimize):
 
     _assert_tensor_shape(logits, [2*3*4, num_classes], 'Logits')
 
-    with tf.Session() as sess:
+    with tf.Session(config = config) as sess:
         sess.run(tf.global_variables_initializer())
         sess.run([train_op], {correct_label: np.arange(np.prod(shape)).reshape(shape), learning_rate: 10})
         test, loss = sess.run([layers_output, cross_entropy_loss], {correct_label: np.arange(np.prod(shape)).reshape(shape)})
@@ -125,7 +129,7 @@ def test_train_nn(train_nn):
     correct_label = tf.placeholder(tf.float32, name='correct_label')
     keep_prob = tf.placeholder(tf.float32, name='keep_prob')
     learning_rate = tf.placeholder(tf.float32, name='learning_rate')
-    with tf.Session() as sess:
+    with tf.Session(config = config) as sess:
         parameters = {
             'sess': sess,
             'epochs': epochs,
