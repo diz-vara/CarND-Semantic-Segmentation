@@ -5,6 +5,7 @@ import warnings
 from distutils.version import LooseVersion
 import project_tests as tests
 import tensorflow.contrib.slim as slim
+import time
 
 
 # Check TensorFlow Version
@@ -148,13 +149,15 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     """
     sess.run(tf.global_variables_initializer())
     #lr = sess.run(learning_rate)
+    #merged = tf.summary.merge_all()
     
     for epoch in range (epochs):
         print ('epoch {}  '.format(epoch))
         for image, label in get_batches_fn(batch_size):
             summary, loss = sess.run([train_op, cross_entropy_loss],
                                      feed_dict={input_image:image, correct_label:label,
-                                     keep_prob:0.5, learning_rate:0.005})
+                                     keep_prob:0.5, learning_rate:5e-5})
+        #writer.add_summary(summary, epoch)                             
         print(" Loss = {:.4f}".format(loss))     
         print()                        
         
@@ -169,6 +172,9 @@ def run():
     image_shape = (160, 576)
     data_dir = './data'
     runs_dir = './runs'
+    timestamp = time.strftime("%Y%m%d_%H%M%S");
+
+    export_dir = './exports/' + timestamp;
     tests.test_for_kitti_dataset(data_dir)
 
     # Download pretrained vgg model
@@ -177,6 +183,7 @@ def run():
     # OPTIONAL: Train and Inference on the cityscapes dataset instead of the Kitti dataset.
     # You'll need a GPU with at least 10 teraFLOPS to train on.
     #  https://www.cityscapes-dataset.com/
+    builder = tf.saved_model.builder.SavedModelBuilder(export_dir);
 
     with tf.Session() as sess:
         # Path to vgg model
@@ -184,8 +191,9 @@ def run():
         # Create function to get batches
         get_batches_fn = helper.gen_batch_function(os.path.join(data_dir, 'data_road/training'), image_shape)
 
-        epochs = 20
-        batch_size = 2
+
+        epochs = 50
+        batch_size = 3
         
         correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes],
                                        name = 'correct_label')
@@ -200,6 +208,7 @@ def run():
 
         logits, train_op, loss = optimize(nn_output, correct_label, 
                                           learning_rate, num_classes)
+
         print('training')
         train_nn(sess, epochs, batch_size, get_batches_fn, train_op,
                  loss, image_in, correct_label, keep_prob, learning_rate)                                          
@@ -207,11 +216,27 @@ def run():
 
 
         # TODO: Save inference data using helper.save_inference_samples
-        print('SAVING')
+        print('Saving results')
         helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, 
                                       logits, keep_prob, image_in)
 
+        
+        print('Saving net:')
+        builder.add_meta_graph_and_variables(sess,
+                                             [tf.saved_model.tag_constants.SERVING])
+        
+        writer = tf.summary.FileWriter('/tmp/log/tf', sess.graph)
+        writer.close()
+
         # OPTIONAL: Apply the trained model to a video
+    print('AFTER sesion')
+    builder.save()
+    
+    
+    
+    
+    
+
 
 
 if __name__ == '__main__':
