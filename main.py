@@ -147,6 +147,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     :param keep_prob: TF Placeholder for dropout keep probability
     :param learning_rate: TF Placeholder for learning rate
     """
+    
     sess.run(tf.global_variables_initializer())
     #lr = sess.run(learning_rate)
     #merged = tf.summary.merge_all()
@@ -166,6 +167,11 @@ tests.test_train_nn(train_nn)
 
 #%%
 tf.reset_default_graph();
+
+input_image = tf.placeholder(tf.float32, name='input_image')
+correct_label = tf.placeholder(tf.float32, name='correct_label')
+keep_prob = tf.placeholder(tf.float32, name='keep_prob')
+learning_rate = tf.placeholder(tf.float32, name='learning_rate')
 
 def run():
     num_classes = 2
