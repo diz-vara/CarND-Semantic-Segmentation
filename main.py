@@ -57,51 +57,58 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     """
     
     # 1x1 convolution of L7 ( 5 x 18 )
-    layer_7_conv = tf.layers.conv2d(vgg_layer7_out, num_classes, 1,
+    l3_depth = vgg_layer3_out.shape[3].value
+    l4_depth = vgg_layer4_out.shape[3].value
+    l7_depth = vgg_layer7_out.shape[3].value
+
+    layer7_conv = tf.layers.conv2d(vgg_layer7_out, l7_depth, 1,
                                 padding = 'same',
-                                kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                kernel_initializer=tf.random_normal_initializer(stddev=0.001),
                                 kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
-                                name='layer_7_conv1')
+                                name='layer7_conv1')
                                 
     # upscale to 10 x 36
-    layer_7_up = tf.layers.conv2d_transpose(layer_7_conv, num_classes, 4,
+    layer7_up = tf.layers.conv2d_transpose(layer7_conv, l4_depth, 4,
                                              strides = (2,2),
                                              padding = 'same',
-                                             kernel_initializer=tf.random_normal_initializer(stddev=0.01),
-                                             name = 'layer_7_up')
-                                
-    # 1x1 convolution of L4 ( 10 x 36 )
-    layer_4_conv = tf.layers.conv2d(vgg_layer4_out, num_classes, 1,
-                                padding = 'same',
-                                kernel_initializer=tf.random_normal_initializer(stddev=0.01),
-                                name = 'layer_4_conv1')
+                                             kernel_initializer=tf.random_normal_initializer(stddev=0.001),
+                                             name = 'layer7_up')
 
     # add upscaled L7
-    layer_4_add = tf.add(layer_4_conv, layer_7_up, name = 'layer_4_add')
+    layer4_add = tf.add(vgg_layer4_out, layer7_up, name = 'layer4_add')
+
+                                
+                                
+    # 1x1 convolution of L4 ( 10 x 36 )
+    layer4_conv = tf.layers.conv2d(layer4_add, l4_depth, 1,
+                                padding = 'same',
+                                kernel_initializer=tf.random_normal_initializer(stddev=0.001),
+                                name = 'layer4_conv1')
+
     
     # upscale to 20 x 72
-    layer_4_up = tf.layers.conv2d_transpose(layer_4_add, num_classes, 4,
+    layer4_up = tf.layers.conv2d_transpose(layer4_conv, l3_depth, 4,
                                              strides = (2,2),
                                              padding = 'same',
-                                             kernel_initializer=tf.random_normal_initializer(stddev=0.01),
-                                             name = 'layer_4_up')
+                                             kernel_initializer=tf.random_normal_initializer(stddev=0.001),
+                                             name = 'layer4_up')
 
+    # add upscaled L4                                
+    layer3_add = tf.add(vgg_layer3_out, layer4_up, name = 'layer_3_add')
 
     # 1x1 convolution of L3 ( 20 x 72)
-    layer_3_conv = tf.layers.conv2d(vgg_layer3_out, num_classes, 1,
+    layer3_conv = tf.layers.conv2d(layer3_add, l3_depth, 1,
                                 padding = 'same',
-                                kernel_initializer=tf.random_normal_initializer(stddev=0.01),
+                                kernel_initializer=tf.random_normal_initializer(stddev=0.001),
                                 name = 'layer_3_conv1')
-    # add upscaled L4                                
-    layer_3_add = tf.add(layer_3_conv, layer_4_up, name = 'layer_3_add')
     # upscale to original 160 x 572
-    layer_3_up = tf.layers.conv2d_transpose(layer_3_add, num_classes, 16,
+    layer3_up = tf.layers.conv2d_transpose(layer3_conv, num_classes, 16,
                                              strides = (8,8),
                                              padding = 'same',
-                                             kernel_initializer=tf.random_normal_initializer(stddev=0.01),
-                                             name = 'layer_3_up')
+                                             kernel_initializer=tf.random_normal_initializer(stddev=0.001),
+                                             name = 'layer3_up')
                                 
-    return layer_3_up
+    return layer3_up
 #tests.test_layers(layers)
 
 #%%
@@ -198,7 +205,7 @@ def run():
         get_batches_fn = helper.gen_batch_function(os.path.join(data_dir, 'data_road/training'), image_shape)
     
     
-        epochs = 5
+        epochs = 50
         batch_size = 2
         
         correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes],
