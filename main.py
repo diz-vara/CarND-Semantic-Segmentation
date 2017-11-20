@@ -65,6 +65,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
                                 padding = 'same',
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.001),
                                 kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                activation=tf.nn.relu,
                                 name='layer7_conv1')
                                 
     # upscale to 10 x 36
@@ -72,6 +73,8 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
                                              strides = (2,2),
                                              padding = 'same',
                                              kernel_initializer=tf.random_normal_initializer(stddev=0.001),
+                                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                             activation=tf.nn.relu,
                                              name = 'layer7_up')
 
     # add upscaled L7
@@ -83,6 +86,8 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     layer4_conv = tf.layers.conv2d(layer4_add, l4_depth, 1,
                                 padding = 'same',
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.001),
+                                kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                activation=tf.nn.relu,
                                 name = 'layer4_conv1')
 
     
@@ -91,6 +96,8 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
                                              strides = (2,2),
                                              padding = 'same',
                                              kernel_initializer=tf.random_normal_initializer(stddev=0.001),
+                                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                             activation=tf.nn.relu,
                                              name = 'layer4_up')
 
     # add upscaled L4                                
@@ -100,12 +107,15 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     layer3_conv = tf.layers.conv2d(layer3_add, l3_depth, 1,
                                 padding = 'same',
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.001),
+                                kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
+                                activation=tf.nn.relu,
                                 name = 'layer_3_conv1')
     # upscale to original 160 x 572
     layer3_up = tf.layers.conv2d_transpose(layer3_conv, num_classes, 16,
                                              strides = (8,8),
                                              padding = 'same',
                                              kernel_initializer=tf.random_normal_initializer(stddev=0.001),
+                                             kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
                                              name = 'layer3_up')
                                 
     return layer3_up
@@ -113,7 +123,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
 #%%
 
-def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
+def optimize(nn_last_layer, correct_label, learning_rate, num_classes, step):
     """
     Build the TensorFLow loss and optimizer operations.
     :param nn_last_layer: TF Tensor of the last layer in the neural network
@@ -132,7 +142,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     loss = tf.reduce_mean(cross_entropy);
     optimizer = tf.train.AdamOptimizer(learning_rate = learning_rate) 
 
-    train_op = optimizer.minimize(loss)
+    train_op = optimizer.minimize(loss, global_step = step)
     
     return result, train_op, loss
 tests.test_optimize(optimize)
@@ -164,13 +174,14 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         for image, label in get_batches_fn(batch_size):
             summary, loss = sess.run([train_op, cross_entropy_loss],
                                      feed_dict={input_image:image, correct_label:label,
-                                     keep_prob:0.5, learning_rate:5e-6})
+                                     keep_prob:0.5})
         #writer.add_summary(summary, epoch)                             
         print(" Loss = {:.4f}".format(loss))     
+        print(" LR = {:f}".format(sess.run(learning_rate)))     
         print()                        
         
     
-tests.test_train_nn(train_nn)
+#tests.test_train_nn(train_nn)
 
 #%%
 tf.reset_default_graph();
@@ -198,6 +209,10 @@ def run():
        device_count = {'GPU': 1}
     )
 
+    starter_learning_rate = 1e-4
+    step = tf.Variable(0, trainable=False)
+    learning_rate = tf.train.exponential_decay(starter_learning_rate, step,
+                                               100, 0.998, staircase=True)
 
     with tf.Session(config=config) as sess:
         vgg_path = os.path.join(data_dir, 'vgg')
@@ -210,7 +225,7 @@ def run():
         
         correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes],
                                        name = 'correct_label')
-        learning_rate = tf.placeholder(tf.float32, name='learning_rate')                                       
+        #learning_rate = tf.placeholder(tf.float32, name='learning_rate')                                       
     
         # OPTIONAL: Augment Images for better results
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
@@ -220,7 +235,7 @@ def run():
         nn_output = layers(l3_o, l4_o, l7_o, 2)
     
         logits, train_op, loss = optimize(nn_output, correct_label, 
-                                          learning_rate, num_classes)
+                                          learning_rate, num_classes, step)
     
         print('training')
         train_nn(sess, epochs, batch_size, get_batches_fn, train_op,
