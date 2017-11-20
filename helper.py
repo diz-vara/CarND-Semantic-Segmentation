@@ -77,20 +77,61 @@ def gen_batch_function(data_folder, image_shape):
             for path in glob(os.path.join(data_folder, 'gt_image_2', '*_road_*.png'))}
         background_color = np.array([255, 0, 0])
 
+        image_nr = len(image_paths)
+        augmentation_coeff =  (1 + 5) * 2
+        total_nr = image_nr * augmentation_coeff;        
+        
         random.shuffle(image_paths)
-        for batch_i in range(0, len(image_paths), batch_size):
+        for batch_i in range(0, total_nr, batch_size):
             images = []
             gt_images = []
-            for image_file in image_paths[batch_i:batch_i+batch_size]:
+            for i in range(batch_i,batch_i+batch_size):
+                image_file = image_paths[i // augmentation_coeff]
                 gt_image_file = label_paths[os.path.basename(image_file)]
                 
-                #TODO: augmentation - cropping
-                image = scipy.misc.imresize(scipy.misc.imread(image_file), image_shape)
-                gt_image = scipy.misc.imresize(scipy.misc.imread(gt_image_file), image_shape)
+                augmentation_factor = i % augmentation_coeff;
+                #augmentation - cropping
+                crop_factor = augmentation_factor // 2;
+                mirror_factor = augmentation_factor % 2;
+                
+                image = scipy.misc.imread(image_file);
+                gt_image = scipy.misc.imread(gt_image_file);
+                if crop_factor == 0:
+                    # do not crop - use origina image
+                    cropped = image;
+                    gt_cropped = gt_image;
+                else:
+                    top = int(image.shape[0]*0.2);
+                    left = int(image.shape[1]*0.2);
+                    bottom = image.shape[0] - top;
+                    right = image.shape[1] - left;
+                    if (crop_factor == 1):
+                        cropped = image[:bottom, :right, :]
+                        gt_cropped = gt_image[:bottom, :right, :]
+                    elif (crop_factor == 2):
+                        cropped = image[:bottom, left:, :]
+                        gt_cropped = gt_image[:bottom, left:, :]
+                    elif (crop_factor == 3):
+                        cropped = image[top:, :right, :]
+                        gt_cropped = gt_image[top:, :right, :]
+                    elif (crop_factor == 4):
+                        cropped = image[top:, left:, :]
+                        gt_cropped = gt_image[top:, left:, :]
+                    elif (crop_factor == 5):
+                        #central crop
+                        left = left//2;
+                        top = top // 2;
+                        right = left + right;
+                        bottom = bottom + top;
+                        cropped = image[top:bottom, left:right, :]
+                        gt_cropped = gt_image[top:bottom, left:right, :]
+
+                
+                image = scipy.misc.imresize(cropped, image_shape)
+                gt_image = scipy.misc.imresize(gt_cropped, image_shape)
 
                 #augmentation - mirroring
-                mirror = np.random.uniform() >= 0.5
-                if (mirror):
+                if (mirror_factor != 0):
                     image = np.fliplr(image)
                     gt_image = np.fliplr(gt_image)
 
