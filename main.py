@@ -101,7 +101,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
                                              name = 'layer4_up')
 
     # add upscaled L4                                
-    layer3_add = tf.add(vgg_layer3_out, layer4_up, name = 'layer_3_add')
+    layer3_add = tf.add(vgg_layer3_out, layer4_up, name = 'layer3_add')
 
     # 1x1 convolution of L3 ( 20 x 72)
     layer3_conv = tf.layers.conv2d(layer3_add, l3_depth, 1,
@@ -119,7 +119,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
                                              name = 'layer3_up')
                                 
     return layer3_up
-#tests.test_layers(layers)
+tests.test_layers(layers)
 
 #%%
 
@@ -177,7 +177,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                                      feed_dict={input_image:image, correct_label:label,
                                      keep_prob:0.5, learning_rate:lr})
         #writer.add_summary(summary, epoch)                          
-        lr = lr * 0.9                             
+        lr = lr * 0.8                             
         print(" Loss = {:.4f}".format(loss))     
         print()                        
         
@@ -188,7 +188,7 @@ tests.test_train_nn(train_nn)
 tf.reset_default_graph();
 
 def run():
-    num_classes = 2
+    num_classes = 3
     image_shape = (160, 576)
     data_dir = './data'
     runs_dir = './runs'
@@ -217,7 +217,7 @@ def run():
         get_batches_fn = helper.gen_batch_function(os.path.join(data_dir, 'data_road/training'), image_shape)
     
     
-        epochs = 50
+        epochs = 10
         batch_size = 2
         
         correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes],
@@ -229,7 +229,7 @@ def run():
     
     
         image_in, keep_prob,l3_o, l4_o, l7_o = load_vgg(sess, vgg_path);
-        nn_output = layers(l3_o, l4_o, l7_o, 2)
+        nn_output = layers(l3_o, l4_o, l7_o, num_classes)
     
         logits, train_op, loss = optimize(nn_output, correct_label, 
                                           learning_rate, num_classes)

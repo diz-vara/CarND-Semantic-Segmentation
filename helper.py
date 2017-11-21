@@ -76,9 +76,11 @@ def gen_batch_function(data_folder, image_shape):
             re.sub(r'_(lane|road)_', '_', os.path.basename(path)): path
             for path in glob(os.path.join(data_folder, 'gt_image_2', '*_road_*.png'))}
         background_color = np.array([255, 0, 0])
+        road_color = np.array([255, 0, 255])
+        other_color = np.array([0, 0, 0])
 
         image_nr = len(image_paths)
-        augmentation_coeff =  (1 + 5) * 2
+        augmentation_coeff = (1 + 5) * 2
         total_nr = image_nr * augmentation_coeff;        
         
         indexes = np.arange(total_nr)
@@ -132,7 +134,7 @@ def gen_batch_function(data_folder, image_shape):
 
                 
                 image = scipy.misc.imresize(cropped, image_shape)
-                gt_image = scipy.misc.imresize(gt_cropped, image_shape)
+                gt_image = scipy.misc.imresize(gt_cropped, image_shape, 'nearest')
 
                 #augmentation - mirroring
                 if (mirror_factor != 0):
@@ -141,8 +143,12 @@ def gen_batch_function(data_folder, image_shape):
 
 
                 gt_bg = np.all(gt_image == background_color, axis=2)
+                gt_road = np.all(gt_image == road_color, axis=2)
+                gt_other = np.all(gt_image == other_color, axis=2)
                 gt_bg = gt_bg.reshape(*gt_bg.shape, 1)
-                gt_image = np.concatenate((gt_bg, np.invert(gt_bg)), axis=2)
+                gt_road = gt_road.reshape(*gt_road.shape, 1)
+                gt_other = gt_other.reshape(*gt_other.shape, 1)
+                gt_image = np.concatenate((gt_bg, gt_road, gt_other), axis=2)
 
                 images.append(image)
                 gt_images.append(gt_image)
@@ -168,12 +174,20 @@ def gen_test_output(sess, logits, keep_prob, image_pl, data_folder, image_shape)
         im_softmax = sess.run(
             [tf.nn.softmax(logits)],
             {keep_prob: 1.0, image_pl: [image]})
-        im_softmax = im_softmax[0][:, 1].reshape(image_shape[0], image_shape[1])
-        segmentation = (im_softmax > 0.5).reshape(image_shape[0], image_shape[1], 1)
-        mask = np.dot(segmentation, np.array([[0, 255, 0, 127]]))
-        mask = scipy.misc.toimage(mask, mode="RGBA")
+        road_softmax = im_softmax[0][:, 1].reshape(image_shape[0], image_shape[1])
+        road_segmentation = (road_softmax > 0.5).reshape(image_shape[0], image_shape[1], 1)
+        road_mask = np.dot(road_segmentation, np.array([[0, 255, 0, 127]]))
+        road_mask = scipy.misc.toimage(road_mask, mode="RGBA")
+
+        other_softmax = im_softmax[0][:, 2].reshape(image_shape[0], image_shape[1])
+        other_segmentation = (other_softmax > 0.5).reshape(image_shape[0], image_shape[1], 1)
+        other_mask = np.dot(other_segmentation, np.array([[200, 0, 0, 127]]))
+        other_mask = scipy.misc.toimage(other_mask, mode="RGBA")
+
+
         street_im = scipy.misc.toimage(image)
-        street_im.paste(mask, box=None, mask=mask)
+        street_im.paste(road_mask, box=None, mask=road_mask)
+        street_im.paste(other_mask, box=None, mask=other_mask)
 
         yield os.path.basename(image_file), np.array(street_im)
 
