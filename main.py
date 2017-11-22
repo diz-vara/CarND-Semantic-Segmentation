@@ -83,7 +83,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
                                 
                                 
     # 1x1 convolution of L4 ( 10 x 36 )
-    layer4_conv = tf.layers.conv2d(layer4_add, l4_depth, 1,
+    layer4_conv = tf.layers.conv2d(layer4_add, l4_depth, (1,1),
                                 padding = 'same',
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.001),
                                 kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
@@ -104,7 +104,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     layer3_add = tf.add(vgg_layer3_out, layer4_up, name = 'layer3_add')
 
     # 1x1 convolution of L3 ( 20 x 72)
-    layer3_conv = tf.layers.conv2d(layer3_add, l3_depth, 1,
+    layer3_conv = tf.layers.conv2d(layer3_add, l3_depth, (1,1),
                                 padding = 'same',
                                 kernel_initializer=tf.random_normal_initializer(stddev=0.001),
                                 kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3),
@@ -177,7 +177,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                                      feed_dict={input_image:image, correct_label:label,
                                      keep_prob:0.5, learning_rate:lr})
         #writer.add_summary(summary, epoch)                          
-        lr = lr * 0.8                             
+        lr = lr * 0.9                            
         print(" Loss = {:.4f}".format(loss))     
         print()                        
         
@@ -206,7 +206,7 @@ def run():
     builder = tf.saved_model.builder.SavedModelBuilder(export_dir);
 
     config = tf.ConfigProto(
-       gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.5),
+       gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.8),
        device_count = {'GPU': 1}
     )
 
@@ -217,7 +217,7 @@ def run():
         get_batches_fn = helper.gen_batch_function(os.path.join(data_dir, 'data_road/training'), image_shape)
     
     
-        epochs = 10
+        epochs = 50
         batch_size = 2
         
         correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes],
