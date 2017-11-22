@@ -61,6 +61,7 @@ increase model capacity a little bit - and made following changes:
 - Add ReLU activation after each convolutional layer.
 
 It really improved the result:
+
 <img src="./Images/um_000013a.png" width="600">
 
 
