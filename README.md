@@ -104,7 +104,7 @@ segmentation of the main road.
 
 #### Training procedure
 
-For the training I used AdamOptimizer - but with manually adjusted learning rate. Resulted error dropeed
+For the training I used AdamOptimizer - but with manually adjusted learning rate. Resulted error dropped
 from 0.8 to 0.0013 after 50 epochs. Results are in the /runs/20171122_045143 folder.
 
 #### CityScape training
