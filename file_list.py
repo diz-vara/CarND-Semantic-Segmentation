@@ -6,28 +6,24 @@ Created on Mon Dec 25 14:33:20 2017
 """
 import os
 
-def get_image_and_labels_list(root_path, label_path, image_path=''):
+def get_image_and_labels_list(root_path, mode, image_path, label_path):
     image_list = []
-    labels_list = []
-    if (len(image_path) < 1):
-        image_path = root_path
-        
-    for root, subdirs, files in os.walk(image_path):
+    label_list = []
+
+    image_mode_dir = os.path.join(root_path, image_path, mode)
+    label_mode_dir = os.path.join(root_path, label_path, mode)
+
+    cities = os.listdir(image_mode_dir)
     
-        for file in os.listdir(root):
-    
-            filePath = os.path.join(root, file)
-    
-            if os.path.isdir(filePath):
-                i,l = get_image_and_labels_list(root_path, label_path, filePath)
-                image_list.extend( i )
-                labels_list.extend( l )
-    
-            else:
-                image_list.append(filePath)
-                labels_list.append( filePath.replace(root_path, label_path).
-                                   replace('_leftImg8bit','_gtFine_labelIds'))
-                # Do Stuff
-        return image_list, labels_list
+    for city in cities:
+        image_city_dir = os.path.join(image_mode_dir, city)
+        label_city_dir = os.path.join(label_mode_dir, city)
+        images = os.listdir(os.path.join(image_city_dir))
+        for image_file in images:
+            image_list.append(os.path.join(image_city_dir, image_file))
+            label_file = image_file.replace('_leftImg8bit','_gtFine_labelIds');
+            label_list.append(os.path.join(label_city_dir, label_file))
+            
+    return image_list, label_list
     
     
