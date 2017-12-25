@@ -119,7 +119,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
                                              name = 'layer3_up')
                                 
     return layer3_up
-tests.test_layers(layers)
+#tests.test_layers(layers)
 
 #%%
 
@@ -145,7 +145,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     train_op = optimizer.minimize(loss)
     
     return result, train_op, loss
-tests.test_optimize(optimize)
+#tests.test_optimize(optimize)
 
 #%%
 
@@ -166,6 +166,8 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     """
     
     sess.run(tf.global_variables_initializer())
+    saver = tf.train.Saver();
+
     #lr = sess.run(learning_rate)
     #merged = tf.summary.merge_all()
     lr = 1e-4
@@ -179,15 +181,14 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                                      keep_prob:0.5, learning_rate:lr})
         #writer.add_summary(summary, epoch)                          
         lr = lr * 0.9                            
-        print(" Loss = {:.4f}".format(loss))     
+        print(" Loss = {:g}".format(loss))     
         print()                        
         if (loss < min_loss):
             print("saving at step {:d}".format(epoch))     
             min_loss = loss;
             saver.save(sess, '/media/undead/Data/CityScapes/net',global_step=epoch)
-        
     
-tests.test_train_nn(train_nn)
+#tests.test_train_nn(train_nn)
 
 #%%
 tf.reset_default_graph();
@@ -223,7 +224,7 @@ def run():
     
     
         epochs = 50
-        batch_size = 16
+        batch_size = 8
         
         correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes],
                                        name = 'correct_label')

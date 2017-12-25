@@ -11,7 +11,7 @@ import tensorflow as tf
 from glob import glob
 from urllib.request import urlretrieve
 from tqdm import tqdm
-
+import cv2
 
 class DLProgress(tqdm):
     last_block = 0
@@ -125,6 +125,11 @@ def gen_batch_function(data_folder, image_shape):
         
         indexes = np.arange(total_nr)
         random.shuffle(indexes)
+        
+        layer_idx = np.arange(256).reshape(256,1)
+        component_idx = np.tile(np.arange(512),(256,1))
+        
+        
         for batch_i in range(0, total_nr, batch_size):
             images = []
             gt_images = []
@@ -141,8 +146,7 @@ def gen_batch_function(data_folder, image_shape):
                 mirror_factor = augmentation_factor % 2;
                 
                 image = scipy.misc.imread(image_file);
-                gt_image = scipy.misc.imread(gt_image_file);
-                gt_image = gt_image[:,:,:3]
+                gt_image = cv2.imread(gt_image_file,-1) #scipy.misc.imread(gt_image_file)*255;
                 if crop_factor == 0:
                     # do not crop - use origina image
                     cropped = image;
@@ -154,16 +158,16 @@ def gen_batch_function(data_folder, image_shape):
                     right = image.shape[1] - left;
                     if (crop_factor == 1):
                         cropped = image[:bottom, :right, :]
-                        gt_cropped = gt_image[:bottom, :right, :]
+                        gt_cropped = gt_image[:bottom, :right]
                     elif (crop_factor == 2):
                         cropped = image[:bottom, left:, :]
-                        gt_cropped = gt_image[:bottom, left:, :]
+                        gt_cropped = gt_image[:bottom, left:]
                     elif (crop_factor == 3):
                         cropped = image[top:, :right, :]
-                        gt_cropped = gt_image[top:, :right, :]
+                        gt_cropped = gt_image[top:, :right]
                     elif (crop_factor == 4):
                         cropped = image[top:, left:, :]
-                        gt_cropped = gt_image[top:, left:, :]
+                        gt_cropped = gt_image[top:, left:]
                     elif (crop_factor == 5):
                         #central crop
                         left = left//2;
@@ -171,28 +175,27 @@ def gen_batch_function(data_folder, image_shape):
                         right = left + right;
                         bottom = bottom + top;
                         cropped = image[top:bottom, left:right, :]
-                        gt_cropped = gt_image[top:bottom, left:right, :]
+                        gt_cropped = gt_image[top:bottom, left:right]
 
                 
                 image = scipy.misc.imresize(cropped, image_shape)
                 gt_image = scipy.misc.imresize(gt_cropped, image_shape, 'nearest')
 
+                gt_image[gt_image > 35] = 0
+                
                 #augmentation - mirroring
                 if (mirror_factor != 0):
                     image = np.fliplr(image)
                     gt_image = np.fliplr(gt_image)
 
 
-                gt_bg = np.all(gt_image == background_color, axis=2)
-                gt_road = np.all(gt_image == road_color, axis=2)
-                gt_other = np.all(gt_image == other_color, axis=2)
-                gt_bg = gt_bg.reshape(*gt_bg.shape, 1)
-                gt_road = gt_road.reshape(*gt_road.shape, 1)
-                gt_other = gt_other.reshape(*gt_other.shape, 1)
-                gt_image = np.concatenate((gt_bg, gt_road, gt_other), axis=2)
+                onehot_label = np.zeros((image_shape[0],image_shape[1], 35),
+                                        dtype = np.float32)
+
+                onehot_label[layer_idx, component_idx, gt_image] = 1
 
                 images.append(image)
-                gt_images.append(gt_image)
+                gt_images.append(onehot_label)
 
             yield np.array(images), np.array(gt_images)
     return get_batches_fn
