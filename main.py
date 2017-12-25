@@ -169,6 +169,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     #lr = sess.run(learning_rate)
     #merged = tf.summary.merge_all()
     lr = 1e-4
+    min_loss = 1e9
     for epoch in range (epochs):
         print ('epoch {}  '.format(epoch))
         print(" LR = {:f}".format(lr))     
@@ -180,6 +181,10 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         lr = lr * 0.9                            
         print(" Loss = {:.4f}".format(loss))     
         print()                        
+        if (loss < min_loss):
+            print("saving at step {:d}".format(epoch))     
+            min_loss = loss;
+            saver.save(sess, '/media/undead/Data/CityScapes/net',global_step=epoch)
         
     
 tests.test_train_nn(train_nn)

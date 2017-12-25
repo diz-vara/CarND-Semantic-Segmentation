@@ -142,6 +142,7 @@ def gen_batch_function(data_folder, image_shape):
                 
                 image = scipy.misc.imread(image_file);
                 gt_image = scipy.misc.imread(gt_image_file);
+                gt_image = gt_image[:,:,:3]
                 if crop_factor == 0:
                     # do not crop - use origina image
                     cropped = image;
