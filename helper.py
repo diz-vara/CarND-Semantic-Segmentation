@@ -10,6 +10,7 @@ import tensorflow as tf
 from glob import glob
 from urllib.request import urlretrieve
 from tqdm import tqdm
+import file_list
 
 
 class DLProgress(tqdm):
@@ -71,6 +72,7 @@ def gen_batch_function(data_folder, image_shape):
         :param batch_size: Batch Size
         :return: Batches of training data
         """
+        
         image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
         label_paths = {
             re.sub(r'_(lane|road)_', '_', os.path.basename(path)): path
