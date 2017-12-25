@@ -188,14 +188,13 @@ tests.test_train_nn(train_nn)
 tf.reset_default_graph();
 
 def run():
-    num_classes = 3
-    image_shape = (160, 576)
+    num_classes = 35
+    image_shape = (256, 512)
     data_dir = './data'
     runs_dir = './runs'
     timestamp = time.strftime("%Y%m%d_%H%M%S");
 
     export_dir = './exports/' + timestamp;
-    tests.test_for_kitti_dataset(data_dir)
 
     # Download pretrained vgg model
     helper.maybe_download_pretrained_vgg(data_dir)
@@ -214,11 +213,12 @@ def run():
     with tf.Session(config=config) as sess:
         vgg_path = os.path.join(data_dir, 'vgg')
         # Create function to get batches
-        get_batches_fn = helper.gen_batch_function(os.path.join(data_dir, 'data_road/training'), image_shape)
+        get_batches_fn = helper.gen_batch_function('/media/undead/Data/CityScapes',
+                                                   image_shape)
     
     
         epochs = 50
-        batch_size = 2
+        batch_size = 16
         
         correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes],
                                        name = 'correct_label')

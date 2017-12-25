@@ -2,6 +2,7 @@ import re
 import random
 import numpy as np
 import os.path
+import os
 import scipy.misc
 import shutil
 import zipfile
@@ -10,7 +11,6 @@ import tensorflow as tf
 from glob import glob
 from urllib.request import urlretrieve
 from tqdm import tqdm
-import file_list
 
 
 class DLProgress(tqdm):
@@ -59,6 +59,31 @@ def maybe_download_pretrained_vgg(data_dir):
         os.remove(os.path.join(vgg_path, vgg_filename))
 
 
+
+def get_image_and_labels_list(root_path, mode, image_path, label_path):
+    image_list = []
+    label_list = []
+
+    image_mode_dir = os.path.join(root_path, image_path, mode)
+    label_mode_dir = os.path.join(root_path, label_path, mode)
+    
+    print (image_mode_dir)
+
+    cities = os.listdir(image_mode_dir)
+    
+    for city in cities:
+        image_city_dir = os.path.join(image_mode_dir, city)
+        label_city_dir = os.path.join(label_mode_dir, city)
+        images = os.listdir(os.path.join(image_city_dir))
+        for image_file in images:
+            image_list.append(os.path.join(image_city_dir, image_file))
+            label_file = image_file.replace('_leftImg8bit','_gtFine_labelIds');
+            label_list.append(os.path.join(label_city_dir, label_file))
+            
+    return image_list, label_list
+    
+
+
 def gen_batch_function(data_folder, image_shape):
     """
     Generate function to create batches of training data
@@ -66,6 +91,14 @@ def gen_batch_function(data_folder, image_shape):
     :param image_shape: Tuple - Shape of image
     :return:
     """
+    image_paths, label_paths = get_image_and_labels_list(data_folder, 
+                                                         'train',
+                                                         'leftImg8bit',
+                                                         'gtFine')
+    image_nr = len(image_paths)
+    print("Image Number = ",image_nr)
+
+
     def get_batches_fn(batch_size):
         """
         Create batches of training data
@@ -73,15 +106,20 @@ def gen_batch_function(data_folder, image_shape):
         :return: Batches of training data
         """
         
-        image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
-        label_paths = {
-            re.sub(r'_(lane|road)_', '_', os.path.basename(path)): path
-            for path in glob(os.path.join(data_folder, 'gt_image_2', '*_road_*.png'))}
+        #image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
+        #label_paths = {
+        #    re.sub(r'_(lane|road)_', '_', os.path.basename(path)): path
+        #    for path in glob(os.path.join(data_folder, 'gt_image_2', '*_road_*.png'))}
+        image_paths, label_paths = get_image_and_labels_list(data_folder, 
+                                                             'train',
+                                                             'leftImg8bit',
+                                                             'gtFine')
         background_color = np.array([255, 0, 0])
         road_color = np.array([255, 0, 255])
         other_color = np.array([0, 0, 0])
 
         image_nr = len(image_paths)
+        print("Image Number = ",image_nr)
         augmentation_coeff = (1 + 5) * 2
         total_nr = image_nr * augmentation_coeff;        
         
@@ -95,7 +133,7 @@ def gen_batch_function(data_folder, image_shape):
                     i = i - total_nr; #cycle in case of overflow
                 idx = indexes[i]
                 image_file = image_paths[idx // augmentation_coeff]
-                gt_image_file = label_paths[os.path.basename(image_file)]
+                gt_image_file = label_paths[idx // augmentation_coeff]
                 
                 augmentation_factor = idx % augmentation_coeff;
                 #augmentation - cropping
@@ -207,3 +245,4 @@ def save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_p
         sess, logits, keep_prob, input_image, os.path.join(data_dir, 'data_road/testing'), image_shape)
     for name, image in image_outputs:
         scipy.misc.imsave(os.path.join(output_dir, name), image)
+
