@@ -2,6 +2,7 @@ import re
 import random
 import numpy as np
 import os.path
+import os
 import scipy.misc
 import shutil
 import zipfile
@@ -10,7 +11,7 @@ import tensorflow as tf
 from glob import glob
 from urllib.request import urlretrieve
 from tqdm import tqdm
-
+import cv2
 
 class DLProgress(tqdm):
     last_block = 0
@@ -58,6 +59,31 @@ def maybe_download_pretrained_vgg(data_dir):
         os.remove(os.path.join(vgg_path, vgg_filename))
 
 
+
+def get_image_and_labels_list(root_path, mode, image_path, label_path):
+    image_list = []
+    label_list = []
+
+    image_mode_dir = os.path.join(root_path, image_path, mode)
+    label_mode_dir = os.path.join(root_path, label_path, mode)
+    
+    print (image_mode_dir)
+
+    cities = os.listdir(image_mode_dir)
+    
+    for city in cities:
+        image_city_dir = os.path.join(image_mode_dir, city)
+        label_city_dir = os.path.join(label_mode_dir, city)
+        images = os.listdir(os.path.join(image_city_dir))
+        for image_file in images:
+            image_list.append(os.path.join(image_city_dir, image_file))
+            label_file = image_file.replace('_leftImg8bit','_gtFine_labelIds');
+            label_list.append(os.path.join(label_city_dir, label_file))
+            
+    return image_list, label_list
+    
+
+
 def gen_batch_function(data_folder, image_shape):
     """
     Generate function to create batches of training data
@@ -65,26 +91,45 @@ def gen_batch_function(data_folder, image_shape):
     :param image_shape: Tuple - Shape of image
     :return:
     """
+    image_paths, label_paths = get_image_and_labels_list(data_folder, 
+                                                         'train',
+                                                         'leftImg8bit',
+                                                         'gtFine')
+    image_nr = len(image_paths)
+    print("Image Number = ",image_nr)
+
+
     def get_batches_fn(batch_size):
         """
         Create batches of training data
         :param batch_size: Batch Size
         :return: Batches of training data
         """
-        image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
-        label_paths = {
-            re.sub(r'_(lane|road)_', '_', os.path.basename(path)): path
-            for path in glob(os.path.join(data_folder, 'gt_image_2', '*_road_*.png'))}
+        
+        #image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
+        #label_paths = {
+        #    re.sub(r'_(lane|road)_', '_', os.path.basename(path)): path
+        #    for path in glob(os.path.join(data_folder, 'gt_image_2', '*_road_*.png'))}
+        image_paths, label_paths = get_image_and_labels_list(data_folder, 
+                                                             'train',
+                                                             'leftImg8bit',
+                                                             'gtFine')
         background_color = np.array([255, 0, 0])
         road_color = np.array([255, 0, 255])
         other_color = np.array([0, 0, 0])
 
         image_nr = len(image_paths)
+        print("Image Number = ",image_nr)
         augmentation_coeff = (1 + 5) * 2
-        total_nr = image_nr * augmentation_coeff;        
+        total_nr = image_nr #* augmentation_coeff;        
         
         indexes = np.arange(total_nr)
         random.shuffle(indexes)
+        
+        layer_idx = np.arange(256).reshape(256,1)
+        component_idx = np.tile(np.arange(512),(256,1))
+        
+        
         for batch_i in range(0, total_nr, batch_size):
             images = []
             gt_images = []
@@ -92,8 +137,8 @@ def gen_batch_function(data_folder, image_shape):
                 if ( i >= total_nr):
                     i = i - total_nr; #cycle in case of overflow
                 idx = indexes[i]
-                image_file = image_paths[idx // augmentation_coeff]
-                gt_image_file = label_paths[os.path.basename(image_file)]
+                image_file = image_paths[idx] # // augmentation_coeff]
+                gt_image_file = label_paths[idx] # // augmentation_coeff]
                 
                 augmentation_factor = idx % augmentation_coeff;
                 #augmentation - cropping
@@ -101,7 +146,7 @@ def gen_batch_function(data_folder, image_shape):
                 mirror_factor = augmentation_factor % 2;
                 
                 image = scipy.misc.imread(image_file);
-                gt_image = scipy.misc.imread(gt_image_file);
+                gt_image = cv2.imread(gt_image_file,-1) #scipy.misc.imread(gt_image_file)*255;
                 if crop_factor == 0:
                     # do not crop - use origina image
                     cropped = image;
@@ -113,16 +158,16 @@ def gen_batch_function(data_folder, image_shape):
                     right = image.shape[1] - left;
                     if (crop_factor == 1):
                         cropped = image[:bottom, :right, :]
-                        gt_cropped = gt_image[:bottom, :right, :]
+                        gt_cropped = gt_image[:bottom, :right]
                     elif (crop_factor == 2):
                         cropped = image[:bottom, left:, :]
-                        gt_cropped = gt_image[:bottom, left:, :]
+                        gt_cropped = gt_image[:bottom, left:]
                     elif (crop_factor == 3):
                         cropped = image[top:, :right, :]
-                        gt_cropped = gt_image[top:, :right, :]
+                        gt_cropped = gt_image[top:, :right]
                     elif (crop_factor == 4):
                         cropped = image[top:, left:, :]
-                        gt_cropped = gt_image[top:, left:, :]
+                        gt_cropped = gt_image[top:, left:]
                     elif (crop_factor == 5):
                         #central crop
                         left = left//2;
@@ -130,28 +175,27 @@ def gen_batch_function(data_folder, image_shape):
                         right = left + right;
                         bottom = bottom + top;
                         cropped = image[top:bottom, left:right, :]
-                        gt_cropped = gt_image[top:bottom, left:right, :]
+                        gt_cropped = gt_image[top:bottom, left:right]
 
                 
                 image = scipy.misc.imresize(cropped, image_shape)
                 gt_image = scipy.misc.imresize(gt_cropped, image_shape, 'nearest')
 
+                gt_image[gt_image > 35] = 0
+                
                 #augmentation - mirroring
                 if (mirror_factor != 0):
                     image = np.fliplr(image)
                     gt_image = np.fliplr(gt_image)
 
 
-                gt_bg = np.all(gt_image == background_color, axis=2)
-                gt_road = np.all(gt_image == road_color, axis=2)
-                gt_other = np.all(gt_image == other_color, axis=2)
-                gt_bg = gt_bg.reshape(*gt_bg.shape, 1)
-                gt_road = gt_road.reshape(*gt_road.shape, 1)
-                gt_other = gt_other.reshape(*gt_other.shape, 1)
-                gt_image = np.concatenate((gt_bg, gt_road, gt_other), axis=2)
+                onehot_label = np.zeros((image_shape[0],image_shape[1], 35),
+                                        dtype = np.float32)
+
+                onehot_label[layer_idx, component_idx, gt_image] = 1
 
                 images.append(image)
-                gt_images.append(gt_image)
+                gt_images.append(onehot_label)
 
             yield np.array(images), np.array(gt_images)
     return get_batches_fn
@@ -205,3 +249,4 @@ def save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_p
         sess, logits, keep_prob, input_image, os.path.join(data_dir, 'data_road/testing'), image_shape)
     for name, image in image_outputs:
         scipy.misc.imsave(os.path.join(output_dir, name), image)
+
