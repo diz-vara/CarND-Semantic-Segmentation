@@ -97,7 +97,8 @@ def gen_batch_function(data_folder, image_shape):
                                                          'gtFine')
     image_nr = len(image_paths)
     print("Image Number = ",image_nr)
-
+    one_hot = np.zeros((nclasses, nclasses), np.uint8 )
+    for i in range(nclasses): one_hot[i,i]=1
 
     def get_batches_fn(batch_size):
         """
@@ -106,28 +107,16 @@ def gen_batch_function(data_folder, image_shape):
         :return: Batches of training data
         """
         
-        #image_paths = glob(os.path.join(data_folder, 'image_2', '*.png'))
-        #label_paths = {
-        #    re.sub(r'_(lane|road)_', '_', os.path.basename(path)): path
-        #    for path in glob(os.path.join(data_folder, 'gt_image_2', '*_road_*.png'))}
-        image_paths, label_paths = get_image_and_labels_list(data_folder, 
-                                                             'train',
-                                                             'leftImg8bit',
-                                                             'gtFine')
-        background_color = np.array([255, 0, 0])
-        road_color = np.array([255, 0, 255])
-        other_color = np.array([0, 0, 0])
 
         image_nr = len(image_paths)
-        print("Image Number = ",image_nr)
         augmentation_coeff = (1 + 5) * 2
         total_nr = image_nr #* augmentation_coeff;        
         
         indexes = np.arange(total_nr)
         random.shuffle(indexes)
         
-        layer_idx = np.arange(256).reshape(256,1)
-        component_idx = np.tile(np.arange(512),(256,1))
+        layer_idx = np.arange(image_shape[0]).reshape(image_shape[0],1)
+        component_idx = np.tile(np.arange(image_shape[1]),(image_shape[0],1))
         
         
         for batch_i in range(0, total_nr, batch_size):
@@ -182,6 +171,7 @@ def gen_batch_function(data_folder, image_shape):
                 gt_image = scipy.misc.imresize(gt_cropped, image_shape, 'nearest')
 
                 gt_image[gt_image > 35] = 0
+                gt_image[gt_image <  0] = 0
                 
                 #augmentation - mirroring
                 if (mirror_factor != 0):
@@ -189,10 +179,8 @@ def gen_batch_function(data_folder, image_shape):
                     gt_image = np.fliplr(gt_image)
 
 
-                onehot_label = np.zeros((image_shape[0],image_shape[1], 35),
-                                        dtype = np.float32)
+                onehot_label = one_hot[gt_image]
 
-                onehot_label[layer_idx, component_idx, gt_image] = 1
 
                 images.append(image)
                 gt_images.append(onehot_label)

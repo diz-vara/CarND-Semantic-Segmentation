@@ -19,7 +19,7 @@ from urllib.request import urlretrieve
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import cv2
-import PIL
+import labels
 
 
 #%%
@@ -28,7 +28,12 @@ import PIL
 
 sess = tf.Session()
 nclasses = 35
-image_shape = (160, 512)
+labels = labels.labels
+nclasses = len(labels)
+
+
+alfa = (127,) #semi-transparent
+colors = np.array([label.color + alfa for label in labels]).astype(np.uint8)
 
 
 saver = tf.train.import_meta_graph('/media/D/DIZ/CityScapes/net/my-net-21.meta')
@@ -56,11 +61,7 @@ def segment_file(image_file):
     res = im_softmax[0].reshape(out_shape)
     mx=np.argmax(res,2)
 
-    alfa = (127,)
-    out_colors = np.zeros((image_shape[0],image_shape[1],4),dtype=np.uint8)
-    for y in range(image_shape[0]):
-        for x in range(image_shape[1]):
-            out_colors[y,x,:] = labels[mx[y,x]].color + alfa
+    out_colors = colors[mx]    
 
     #out_image = scipy.misc.toimage(mx, mode = 'L')
     out_image = cv2.resize(mx, (original_shape[1], original_shape[0]), 
@@ -71,9 +72,6 @@ def segment_file(image_file):
 
     street_im = scipy.misc.toimage(image0)
     street_im.paste(colors_img,box=None,mask=colors_img)
-
-
-    
     return street_im, out_image
 
 #plt.imshow(street_im)
