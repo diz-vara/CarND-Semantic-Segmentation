@@ -19,31 +19,35 @@ from urllib.request import urlretrieve
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import cv2
-import labels
-
+import labels as lbl
+import numpy as np
+import helper
 
 #%%
 #saver = tf.train.import_meta_graph('./exports/KITTI_segm/KITTI_segm-33.meta')
 #saver.restore(sess,'./exports/KITTI_segm/KITTI_segm-33')
 
-sess = tf.Session()
-nclasses = 35
-labels = labels.labels
-nclasses = len(labels)
-
+labels = lbl.labels
+num_classes = len(labels)
+image_shape=(160,512)
 
 alfa = (127,) #semi-transparent
 colors = np.array([label.color + alfa for label in labels]).astype(np.uint8)
 
+sess = tf.Session()
 
-saver = tf.train.import_meta_graph('/media/D/DIZ/CityScapes/net/my-net-21.meta')
-saver.restore(sess,'/media/D/DIZ/CityScapes/net/my-net-21')
+saver = tf.train.import_meta_graph('/media/D/DIZ/CityScapes/net/my-net-35.meta')
+saver.restore(sess,'/media/D/DIZ/CityScapes/net/my-net-35')
 
 graph=tf.get_default_graph()
 keep_prob = graph.get_tensor_by_name('keep_prob:0')
 image_in = graph.get_tensor_by_name('image_input:0')
-nn_out = graph.get_tensor_by_name('layer3_up/BiasAdd:0')
-logits = tf.reshape(nn_out,(-1,nclasses))
+nn_output = graph.get_tensor_by_name('layer3_up/BiasAdd:0')
+
+assert(nn_output.shape[-1] == num_classes)
+
+
+logits = tf.reshape(nn_output,(-1,num_classes))
 
 #%%
 data_folder='/media/D/DIZ/Datasets/KITTI/2011_09_26/2011_09_26_drive_0117_sync/'
