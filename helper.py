@@ -93,8 +93,8 @@ def gen_batch_function(data_folder, image_shape):
                     i = i - total_nr; #cycle in case of overflow
                 idx = indexes[i]
                 image_file = image_paths[idx // augmentation_coeff]
+                #print(image_file)
                 gt_image_file = label_paths[os.path.basename(image_file)]
-                
                 augmentation_factor = idx % augmentation_coeff;
                 #augmentation - cropping
                 crop_factor = augmentation_factor // 2;
@@ -102,6 +102,10 @@ def gen_batch_function(data_folder, image_shape):
                 
                 image = scipy.misc.imread(image_file);
                 gt_image = scipy.misc.imread(gt_image_file);
+                
+                #I produce 32-bit images
+                gt_image = gt_image[:,:,:3]
+                
                 if crop_factor == 0:
                     # do not crop - use origina image
                     cropped = image;
@@ -142,12 +146,14 @@ def gen_batch_function(data_folder, image_shape):
                     gt_image = np.fliplr(gt_image)
 
 
-                gt_bg = np.all(gt_image == background_color, axis=2)
+                #gt_bg = np.all(gt_image != road_color, axis=2)
                 gt_road = np.all(gt_image == road_color, axis=2)
+                #gt_bg = ~gt_road
                 gt_other = np.all(gt_image == other_color, axis=2)
-                gt_bg = gt_bg.reshape(*gt_bg.shape, 1)
+                #gt_bg = gt_bg.reshape(*gt_bg.shape, 1)
                 gt_road = gt_road.reshape(*gt_road.shape, 1)
                 gt_other = gt_other.reshape(*gt_other.shape, 1)
+                gt_bg = ~(gt_road|gt_other)
                 gt_image = np.concatenate((gt_bg, gt_road, gt_other), axis=2)
 
                 images.append(image)
