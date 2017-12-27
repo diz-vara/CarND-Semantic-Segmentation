@@ -121,7 +121,7 @@ def gen_batch_function(data_folder, image_shape):
         image_nr = len(image_paths)
         print("Image Number = ",image_nr)
         augmentation_coeff = (1 + 5) * 2
-        total_nr = image_nr * augmentation_coeff;        
+        total_nr = image_nr #* augmentation_coeff;        
         
         indexes = np.arange(total_nr)
         random.shuffle(indexes)
@@ -137,8 +137,8 @@ def gen_batch_function(data_folder, image_shape):
                 if ( i >= total_nr):
                     i = i - total_nr; #cycle in case of overflow
                 idx = indexes[i]
-                image_file = image_paths[idx // augmentation_coeff]
-                gt_image_file = label_paths[idx // augmentation_coeff]
+                image_file = image_paths[idx] # // augmentation_coeff]
+                gt_image_file = label_paths[idx] # // augmentation_coeff]
                 
                 augmentation_factor = idx % augmentation_coeff;
                 #augmentation - cropping
