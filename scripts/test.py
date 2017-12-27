@@ -28,15 +28,15 @@ import PIL
 
 sess = tf.Session()
 nclasses = 35
+image_shape = (160, 512)
 
 
-saver = tf.train.import_meta_graph('/media/D/DIZ/CityScapes/net/my-net-12.meta')
-saver.restore(sess,'/media/D/DIZ/CityScapes/net/my-net-12')
+saver = tf.train.import_meta_graph('/media/D/DIZ/CityScapes/net/my-net-21.meta')
+saver.restore(sess,'/media/D/DIZ/CityScapes/net/my-net-21')
 
 graph=tf.get_default_graph()
 keep_prob = graph.get_tensor_by_name('keep_prob:0')
 image_in = graph.get_tensor_by_name('image_input:0')
-image_shape = (160, 512)
 nn_out = graph.get_tensor_by_name('layer3_up/BiasAdd:0')
 logits = tf.reshape(nn_out,(-1,nclasses))
 
