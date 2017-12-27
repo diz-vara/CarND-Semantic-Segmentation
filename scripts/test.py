@@ -19,7 +19,7 @@ from urllib.request import urlretrieve
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import cv2
-import PIL
+import labels
 
 
 #%%
@@ -27,7 +27,9 @@ import PIL
 #saver.restore(sess,'./exports/KITTI_segm/KITTI_segm-33')
 
 sess = tf.Session()
-nclasses = 35
+labels = labels.labels
+nclasses = len(labels)
+
 
 
 saver = tf.train.import_meta_graph('/media/D/DIZ/CityScapes/net/my-net-12.meta')
