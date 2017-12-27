@@ -186,7 +186,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         if (loss < min_loss):
             print("saving at step {:d}".format(epoch))     
             min_loss = loss;
-            saver.save(sess, '/media/undead/Data/CityScapes/net',global_step=epoch)
+            saver.save(sess, '/media/undead/ssd/CityScapes/net/my-net',global_step=epoch)
     
 #tests.test_train_nn(train_nn)
 
@@ -219,7 +219,7 @@ def run():
     with tf.Session(config=config) as sess:
         vgg_path = os.path.join(data_dir, 'vgg')
         # Create function to get batches
-        get_batches_fn = helper.gen_batch_function('/media/undead/Data/CityScapes',
+        get_batches_fn = helper.gen_batch_function('/media/undead/ssd/CityScapes',
                                                    image_shape)
     
     
