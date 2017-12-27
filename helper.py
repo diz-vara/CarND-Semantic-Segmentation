@@ -84,21 +84,22 @@ def get_image_and_labels_list(root_path, mode, image_path, label_path):
     
 
 
-def gen_batch_function(data_folder, image_shape):
+def gen_batch_function(data_folder, image_shape, num_classes):
     """
     Generate function to create batches of training data
     :param data_folder: Path to folder that contains all the datasets
     :param image_shape: Tuple - Shape of image
     :return:
     """
+    print("num_classes=",num_classes)
     image_paths, label_paths = get_image_and_labels_list(data_folder, 
                                                          'train',
                                                          'leftImg8bit',
                                                          'gtFine')
     image_nr = len(image_paths)
     print("Image Number = ",image_nr)
-    one_hot = np.zeros((nclasses, nclasses), np.uint8 )
-    for i in range(nclasses): one_hot[i,i]=1
+    one_hot = np.zeros((num_classes, num_classes), np.int32 )
+    for i in range(num_classes): one_hot[i,i]=1
 
     def get_batches_fn(batch_size):
         """

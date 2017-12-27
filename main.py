@@ -177,7 +177,8 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         print(" LR = {:f}".format(lr))     
         for image, label in get_batches_fn(batch_size):
             summary, loss = sess.run([train_op, cross_entropy_loss],
-                                     feed_dict={input_image:image, correct_label:label,
+                                     feed_dict={input_image:image, 
+                                                correct_label:label,
                                      keep_prob:0.5, learning_rate:lr})
         #writer.add_summary(summary, epoch)                          
         lr = lr * 0.9                            
@@ -186,7 +187,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         if (loss < min_loss):
             print("saving at step {:d}".format(epoch))     
             min_loss = loss;
-            saver.save(sess, '/media/undead/ssd/CityScapes/net/my-net',global_step=epoch)
+            saver.save(sess, '/media/D/DIZ/CityScapes/net/my2-net',global_step=epoch)
     
 #tests.test_train_nn(train_nn)
 
@@ -219,8 +220,8 @@ def run():
     with tf.Session(config=config) as sess:
         vgg_path = os.path.join(data_dir, 'vgg')
         # Create function to get batches
-        get_batches_fn = helper.gen_batch_function('/media/undead/ssd/CityScapes',
-                                                   image_shape)
+        get_batches_fn = helper.gen_batch_function('/media/D/DIZ/CityScapes',
+                                                   image_shape, num_classes)
     
     
         epochs = 50
