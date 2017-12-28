@@ -36,8 +36,8 @@ colors = np.array([label.color + alfa for label in labels]).astype(np.uint8)
 
 sess = tf.Session()
 
-saver = tf.train.import_meta_graph('/media/D/DIZ/CityScapes/net/my-net-35.meta')
-saver.restore(sess,'/media/D/DIZ/CityScapes/net/my-net-35')
+saver = tf.train.import_meta_graph('/media/D/DIZ/CityScapes/net/my-net-41.meta')
+saver.restore(sess,'/media/D/DIZ/CityScapes/net/my-net-41')
 
 graph=tf.get_default_graph()
 keep_prob = graph.get_tensor_by_name('keep_prob:0')
@@ -50,7 +50,7 @@ assert(nn_output.shape[-1] == num_classes)
 logits = tf.reshape(nn_output,(-1,num_classes))
 
 #%%
-data_folder='/media/D/DIZ/Datasets/KITTI/2011_09_26/2011_09_26_drive_0117_sync/'
+data_folder='/media/D/DIZ/Datasets/KITTI/2011_09_26/2011_09_26_drive_0106_sync/'
 #data_folder='/media/D/DIZ/Datasets/KITTI/2011_10_03/2011_10_03_drive_0042_sync/'
 l = glob(os.path.join(data_folder, 'image_02/data', '*.png'))
 #%%
@@ -80,12 +80,18 @@ def segment_file(image_file):
 
 #plt.imshow(street_im)
 #%%
+data_folder='/media/D/DIZ/Datasets/KITTI/2011_09_26/2011_09_26_drive_0051_sync/'
 
 try:
     os.makedirs(os.path.join(data_folder,'Croad'))
+except:
+    pass        
+
+try:
     os.makedirs(os.path.join(data_folder,'Coverlay'))
 except:
     pass        
+
 
 out_shape = (image_shape[0], image_shape[1], 35)
 
