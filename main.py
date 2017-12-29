@@ -6,7 +6,7 @@ from distutils.version import LooseVersion
 import project_tests as tests
 import tensorflow.contrib.slim as slim
 import time
-
+import sys
 
 # Check TensorFlow Version
 assert LooseVersion(tf.__version__) >= LooseVersion('1.0'), 'Please use TensorFlow version 1.0 or newer.  You are using {}'.format(tf.__version__)
@@ -175,11 +175,15 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     for epoch in range (epochs):
         print ('epoch {}  '.format(epoch))
         print(" LR = {:f}".format(lr))     
+        bnum=0
         for image, label in get_batches_fn(batch_size):
             summary, loss = sess.run([train_op, cross_entropy_loss],
                                      feed_dict={input_image:image, 
                                                 correct_label:label,
                                      keep_prob:0.5, learning_rate:lr})
+            sys.stdout.write('\r' + str(bnum)+'  \r')
+            sys.stdout.flush()
+            bnum = bnum + 1
         #writer.add_summary(summary, epoch)                          
         lr = lr * 0.9                            
         print(" Loss = {:g}".format(loss))     
@@ -187,7 +191,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         if (loss < min_loss):
             print("saving at step {:d}".format(epoch))     
             min_loss = loss;
-            saver.save(sess, '/media/D/DIZ/CityScapes/net/my2-net',global_step=epoch)
+            saver.save(sess, '/media/undead/ssd/CityScapes/net/my2-net',global_step=epoch)
     
 #tests.test_train_nn(train_nn)
 
@@ -220,12 +224,12 @@ def run():
     with tf.Session(config=config) as sess:
         vgg_path = os.path.join(data_dir, 'vgg')
         # Create function to get batches
-        get_batches_fn = helper.gen_batch_function('/media/D/DIZ/CityScapes',
+        get_batches_fn = helper.gen_batch_function('/media/undead/ssd/CityScapes',
                                                    image_shape, num_classes)
     
     
-        epochs = 50
-        batch_size = 8
+        epochs = 500
+        batch_size = 16
         
         correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes],
                                        name = 'correct_label')
