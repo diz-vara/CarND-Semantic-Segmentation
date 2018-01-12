@@ -36,8 +36,8 @@ colors = np.array([label.color + alfa for label in labels]).astype(np.uint8)
 
 sess = tf.Session()
 
-saver = tf.train.import_meta_graph('/media/D/DIZ/CityScapes/net/my-net-41.meta')
-saver.restore(sess,'/media/D/DIZ/CityScapes/net/my-net-41')
+saver = tf.train.import_meta_graph('/media/D/DIZ/CityScapes/net/my2-net-13.meta')
+saver.restore(sess,'/media/D/DIZ/CityScapes/net/my2-net-13')
 
 graph=tf.get_default_graph()
 keep_prob = graph.get_tensor_by_name('keep_prob:0')
@@ -80,15 +80,18 @@ def segment_file(image_file):
 
 #plt.imshow(street_im)
 #%%
-data_folder='/media/D/DIZ/Datasets/KITTI/2011_09_26/2011_09_26_drive_0051_sync/'
+data_folder='/media/D/DIZ/Datasets/KITTI/2011_09_26/2011_09_26_drive_0117_sync/'
+
+road_name = 'Croad-2-13'
+overlay_name = 'Coverlay-2-13'
 
 try:
-    os.makedirs(os.path.join(data_folder,'Croad'))
+    os.makedirs(os.path.join(data_folder,road_name))
 except:
     pass        
 
 try:
-    os.makedirs(os.path.join(data_folder,'Coverlay'))
+    os.makedirs(os.path.join(data_folder,overlay_name))
 except:
     pass        
 
@@ -99,8 +102,8 @@ l = glob(os.path.join(data_folder, 'image_02/data', '*.png'))
 
 for im_file in l:
     im_out, mask = segment_file(im_file)
-    out_file = im_file.replace('/data/','/../Coverlay/')
+    out_file = im_file.replace('/data/','/../' + overlay_name + '/')
     scipy.misc.imsave(out_file, im_out)
     print(out_file)
-    out_file = im_file.replace('/data/','/../Croad/')
+    out_file = im_file.replace('/data/','/../' + road_name + '/')
     cv2.imwrite(out_file,mask)

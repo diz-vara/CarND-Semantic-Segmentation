@@ -22,11 +22,12 @@ import cv2
 import labels as lbl
 import numpy as np
 import helper
+import sys
 
 
 #%%
 def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image,
-             correct_label, keep_prob, learning_rate):
+             corr_label, keep_prob, learning_rate):
     """
     Train neural network and print out the loss during training.
     :param sess: TF Session
@@ -46,16 +47,21 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
 
     #lr = sess.run(learning_rate)
     #merged = tf.summary.merge_all()
-    lr = 1e-4
+    lr = 1e-6
     min_loss = 1e9
     for epoch in range (epochs):
         print ('epoch {}  '.format(epoch))
-        print(" LR = {:f}".format(lr))     
+        print(" LR = {:f}".format(lr))
+        sys.stdout.flush()
+        bnum = 0
         for image, label in get_batches_fn(batch_size):
             summary, loss = sess.run([train_op, cross_entropy_loss],
                                      feed_dict={input_image:image, 
-                                                correct_label:label,
+                                                corr_label:label,
                                      keep_prob:0.5, learning_rate:lr})
+            sys.stdout.write('\r' + str(bnum) + '  ' + str(loss) + '   \r')
+            sys.stdout.flush()      
+            bnum = bnum + 1                   
         #writer.add_summary(summary, epoch)                          
         lr = lr * 0.9                            
         print(" Loss = {:g}".format(loss))     
@@ -63,7 +69,8 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         if (loss < min_loss):
             print("saving at step {:d}".format(epoch))     
             min_loss = loss;
-            saver.save(sess, '/media/D/DIZ/CityScapes/net/my2-net',global_step=epoch)
+            saver.save(sess, '/media/D/DIZ/CityScapes/net/my2-train-',
+                       global_step=epoch+114)
             
 #%%
 #%%
@@ -83,7 +90,7 @@ num_classes = len(labels)
 image_shape=(256,512)
 
 epochs = 50
-batch_size = 8
+batch_size = 24
 
 
 alfa = (127,) #semi-transparent
@@ -94,24 +101,28 @@ config = tf.ConfigProto(
    device_count = {'GPU': 1}
 )
 sess = tf.Session(config = config)
-#saver = tf.train.Saver()
-saver = tf.train.import_meta_graph('/media/D/DIZ/CityScapes/net/my-net-41.meta')
-saver.restore(sess,'/media/D/DIZ/CityScapes/net/my-net-41')
 
-graph=tf.get_default_graph()
-keep_prob = graph.get_tensor_by_name('keep_prob:0')
-image_in = graph.get_tensor_by_name('image_input:0')
-nn_output = graph.get_tensor_by_name('layer3_up/BiasAdd:0')
+#saver = tf.train.Saver()
+
+
+saver = tf.train.import_meta_graph('/media/D/DIZ/CityScapes/net/my2-net-13.meta')
+saver.restore(sess,'/media/D/DIZ/CityScapes/net/my2-net-13')
+
+
+model = tf.get_default_graph()
+
+input_image = model.get_tensor_by_name('image_input:0')
+keep_prob = model.get_tensor_by_name('keep_prob:0')
+nn_output = model.get_tensor_by_name('layer3_up/BiasAdd:0')
+correct_label = model.get_tensor_by_name('correct_label:0')
+learning_rate = model.get_tensor_by_name('learning_rate:0')
+
 
 assert(nn_output.shape[-1] == num_classes)
 
 
 logits = tf.reshape(nn_output,(-1,num_classes))
 
-    
-correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes],
-                               name = 'correct_label')
-learning_rate = tf.placeholder(tf.float32, name='learning_rate')                                       
 
 cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=correct_label,
                                                         logits = logits,
@@ -119,15 +130,25 @@ cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=correct_label,
 loss = tf.reduce_mean(cross_entropy);
 
 
+
 get_batches_fn = helper.gen_batch_function('/media/D/DIZ/CityScapes',
                                            image_shape, num_classes)
 
-train_op=graph.get_collection('train_op')
+
+
+
+
+
+train_op=model.get_collection('train_op')[0]
+
+train_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,'layer3')
+#train_op = tf.train.GradientDescentOptimizer(learning_rate = learning_rate).minimize(loss, var_list = train_vars)
+#train_op = tf.train.AdamOptimizer(learning_rate = learning_rate).minimize(loss, var_list = train_vars)
 
 
 print('training')
 train_nn(sess, epochs, batch_size, get_batches_fn, train_op,
-         loss, image_in, correct_label, keep_prob, learning_rate)                                          
+         loss, input_image, correct_label, keep_prob, learning_rate) 
 
 
 
