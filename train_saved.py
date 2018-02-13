@@ -41,8 +41,8 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     :param learning_rate: TF Placeholder for learning rate
     """
     
-    sess.run(tf.global_variables_initializer())
-    saver = tf.train.Saver();
+    #sess.run(tf.global_variables_initializer())
+    #saver = tf.train.Saver();
 
     #lr = sess.run(learning_rate)
     #merged = tf.summary.merge_all()
@@ -94,9 +94,9 @@ config = tf.ConfigProto(
    device_count = {'GPU': 1}
 )
 sess = tf.Session(config = config)
-
-saver = tf.train.import_meta_graph('/media/D/DIZ/CityScapes/net/my-net-21.meta')
-saver.restore(sess,'/media/D/DIZ/CityScapes/net/my-net-21')
+#saver = tf.train.Saver()
+saver = tf.train.import_meta_graph('/media/D/DIZ/CityScapes/net/my-net-41.meta')
+saver.restore(sess,'/media/D/DIZ/CityScapes/net/my-net-41')
 
 graph=tf.get_default_graph()
 keep_prob = graph.get_tensor_by_name('keep_prob:0')
