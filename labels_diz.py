@@ -5,6 +5,7 @@
 
 from collections import namedtuple
 import cv2
+import numpy as np
 
 #--------------------------------------------------------------------------------
 # Definitions

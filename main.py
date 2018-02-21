@@ -187,7 +187,8 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         if (loss < min_loss):
             print("saving at step {:d}".format(epoch))     
             min_loss = loss;
-            saver.save(sess, '/media/D/DIZ/CityScapes/net/my2-net',global_step=epoch)
+            saver.save(sess, '/media/D/DIZ/Datasets/KITTI/Segmentation/net/my2-net',
+                       global_step=epoch)
     
 #tests.test_train_nn(train_nn)
 
@@ -195,8 +196,8 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
 tf.reset_default_graph();
 
 def run():
-    num_classes = 35
-    image_shape = (256, 512)
+    num_classes = len(labels_diz)
+    image_shape = (160, 576)
     data_dir = './data'
     runs_dir = './runs'
     timestamp = time.strftime("%Y%m%d_%H%M%S");
@@ -220,7 +221,7 @@ def run():
     with tf.Session(config=config) as sess:
         vgg_path = os.path.join(data_dir, 'vgg')
         # Create function to get batches
-        get_batches_fn = helper.gen_batch_function('/media/D/DIZ/CityScapes',
+        get_batches_fn = helper.gen_batch_function('/media/D/DIZ/Datasets/KITTI/Segmentation',
                                                    image_shape, num_classes)
     
     

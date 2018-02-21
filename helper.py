@@ -82,6 +82,22 @@ def get_image_and_labels_list(root_path, mode, image_path, label_path):
             
     return image_list, label_list
     
+def get_image_and_labels_list_D(root_path, mode, image_path, label_path):
+    image_list = []
+    label_list = []
+
+    image_mode_dir = os.path.join(root_path, mode, image_path)
+    label_mode_dir = os.path.join(root_path, mode, label_path)
+    
+    print (image_mode_dir)
+
+    
+    images = os.listdir(os.path.join(image_mode_dir))
+    for image_file in images:
+        image_list.append(os.path.join(image_mode_dir, image_file))
+        label_list.append(os.path.join(label_mode_dir, image_file))
+            
+    return image_list, label_list
 
 
 def gen_batch_function(data_folder, image_shape, num_classes):
@@ -92,10 +108,10 @@ def gen_batch_function(data_folder, image_shape, num_classes):
     :return:
     """
     print("num_classes=",num_classes)
-    image_paths, label_paths = get_image_and_labels_list(data_folder, 
+    image_paths, label_paths = get_image_and_labels_list_D(data_folder, 
                                                          'train',
-                                                         'leftImg8bit',
-                                                         'gtFine')
+                                                         'image',
+                                                         'gt-diz')
     image_nr = len(image_paths)
     print("Image Number = ",image_nr)
     one_hot = np.zeros((num_classes, num_classes), np.int32 )
@@ -111,7 +127,7 @@ def gen_batch_function(data_folder, image_shape, num_classes):
 
         image_nr = len(image_paths)
         augmentation_coeff = (1 + 5) * 2
-        total_nr = image_nr #* augmentation_coeff;        
+        total_nr = image_nr * augmentation_coeff;        
         
         indexes = np.arange(total_nr)
         random.shuffle(indexes)
@@ -127,8 +143,8 @@ def gen_batch_function(data_folder, image_shape, num_classes):
                 if ( i >= total_nr):
                     i = i - total_nr; #cycle in case of overflow
                 idx = indexes[i]
-                image_file = image_paths[idx] # // augmentation_coeff]
-                gt_image_file = label_paths[idx] # // augmentation_coeff]
+                image_file = image_paths[idx // augmentation_coeff]
+                gt_image_file = label_paths[idx // augmentation_coeff]
                 
                 augmentation_factor = idx % augmentation_coeff;
                 #augmentation - cropping
@@ -136,6 +152,7 @@ def gen_batch_function(data_folder, image_shape, num_classes):
                 mirror_factor = augmentation_factor % 2;
                 
                 image = scipy.misc.imread(image_file);
+                #image = cv2.medianBlur(image,5)
                 gt_image = cv2.imread(gt_image_file,-1) #scipy.misc.imread(gt_image_file)*255;
                 if crop_factor == 0:
                     # do not crop - use origina image

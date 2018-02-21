@@ -19,7 +19,7 @@ from urllib.request import urlretrieve
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import cv2
-import labels as lbl
+import labels_diz as lbl
 import numpy as np
 import helper
 import sys
@@ -27,7 +27,7 @@ import sys
 
 #%%
 def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image,
-             corr_label, keep_prob, learning_rate):
+             corr_label, keep_prob, learning_rate, base = 0):
     """
     Train neural network and print out the loss during training.
     :param sess: TF Session
@@ -47,7 +47,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
 
     #lr = sess.run(learning_rate)
     #merged = tf.summary.merge_all()
-    lr = 1e-6
+    lr = 5e-6
     min_loss = 1e9
     for epoch in range (epochs):
         print ('epoch {}  '.format(epoch))
@@ -63,14 +63,14 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
             sys.stdout.flush()      
             bnum = bnum + 1                   
         #writer.add_summary(summary, epoch)                          
-        lr = lr * 0.9                            
+        lr = lr * 0.97                            
         print(" Loss = {:g}".format(loss))     
         print()                        
         if (loss < min_loss):
-            print("saving at step {:d}".format(epoch))     
+            print("saving at step {:d}".format(epoch+base))     
             min_loss = loss;
-            saver.save(sess, '/media/D/DIZ/CityScapes/net/my2-train-',
-                       global_step=epoch+114)
+            saver.save(sess, '/media/avarfolomeev/storage/Data/Segmentation/net/my2-net',
+                       global_step=epoch+base)
             
 #%%
 #%%
@@ -85,12 +85,12 @@ timestamp = time.strftime("%Y%m%d_%H%M%S");
 
 export_dir = './exports/' + timestamp;
 
-labels = lbl.labels
+labels = lbl.labels_diz
 num_classes = len(labels)
-image_shape=(256,512)
+image_shape=(384,1216)
 
-epochs = 50
-batch_size = 24
+epochs = 150
+batch_size = 5
 
 
 alfa = (127,) #semi-transparent
@@ -105,8 +105,8 @@ sess = tf.Session(config = config)
 #saver = tf.train.Saver()
 
 
-saver = tf.train.import_meta_graph('/media/D/DIZ/CityScapes/net/my2-net-13.meta')
-saver.restore(sess,'/media/D/DIZ/CityScapes/net/my2-net-13')
+saver = tf.train.import_meta_graph('/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-2042.meta')
+saver.restore(sess,'/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-2042')
 
 
 model = tf.get_default_graph()
@@ -131,7 +131,7 @@ loss = tf.reduce_mean(cross_entropy);
 
 
 
-get_batches_fn = helper.gen_batch_function('/media/D/DIZ/CityScapes',
+get_batches_fn = helper.gen_batch_function('/media/D/DIZ/Datasets/KITTI/Segmentation/',
                                            image_shape, num_classes)
 
 
@@ -148,7 +148,7 @@ train_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,'layer3')
 
 print('training')
 train_nn(sess, epochs, batch_size, get_batches_fn, train_op,
-         loss, input_image, correct_label, keep_prob, learning_rate) 
+         loss, input_image, correct_label, keep_prob, learning_rate, 3000) 
 
 
 
