@@ -39,6 +39,14 @@ sess = tf.Session()
 saver = tf.train.import_meta_graph('/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-3029.meta')
 saver.restore(sess,'/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-3029')
 
+model = tf.get_default_graph()
+
+input_image = model.get_tensor_by_name('image_input:0')
+keep_prob = model.get_tensor_by_name('keep_prob:0')
+nn_output = model.get_tensor_by_name('layer3_up/BiasAdd:0')
+
+
+logits = tf.reshape(nn_output,(-1,num_classes))
 
 #%%
 
@@ -48,7 +56,7 @@ def segment_file(image_file):
 
     image = scipy.misc.imresize(image0, image_shape)
 
-    #image = cv2.medianBlur(image,5)
+    image = cv2.GaussianBlur(image,(3,3),2)
     
     im_softmax = sess.run([tf.nn.softmax(logits)], {keep_prob: 1.0, input_image: [image]})
 
@@ -71,10 +79,11 @@ def segment_file(image_file):
 #plt.imshow(street_im)
 #%%
 #data_folder='/media/D/DIZ/Datasets/KITTI/2011_10_03/2011_10_03_drive_0027_sync/'
-data_folder='/media/D/DIZ/Datasets/KITTI/2011_09_26/2011_09_26_drive_0084_sync/'
+#data_folder='/media/D/DIZ/Datasets/KITTI/2011_09_26/2011_09_26_drive_0084_sync/'
+data_folder='/media/avarfolomeev/storage/Data/voxels/2018_03_08/2018_03_08_drive_0022_sync/'
 
-road_name = 'Xroad-4'
-overlay_name = 'Xoverlay-4'
+road_name = 'Xroad'
+overlay_name = 'Xoverlay'
 
 try:
     os.makedirs(os.path.join(data_folder,road_name))
