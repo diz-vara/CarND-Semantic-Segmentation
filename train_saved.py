@@ -47,7 +47,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
 
     #lr = sess.run(learning_rate)
     #merged = tf.summary.merge_all()
-    lr = 5e-6
+    lr = 1e-5
     min_loss = 1e9
     for epoch in range (epochs):
         print ('epoch {}  '.format(epoch))
@@ -63,7 +63,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
             sys.stdout.flush()      
             bnum = bnum + 1                   
         #writer.add_summary(summary, epoch)                          
-        lr = lr * 0.97                            
+        lr = lr * 0.96                            
         print(" Loss = {:g}".format(loss))     
         print()                        
         if (loss < min_loss):
@@ -105,8 +105,8 @@ sess = tf.Session(config = config)
 #saver = tf.train.Saver()
 
 
-saver = tf.train.import_meta_graph('/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-2042.meta')
-saver.restore(sess,'/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-2042')
+saver = tf.train.import_meta_graph('/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-3029.meta')
+saver.restore(sess,'/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-3029')
 
 
 model = tf.get_default_graph()
@@ -148,7 +148,7 @@ train_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,'layer3')
 
 print('training')
 train_nn(sess, epochs, batch_size, get_batches_fn, train_op,
-         loss, input_image, correct_label, keep_prob, learning_rate, 3000) 
+         loss, input_image, correct_label, keep_prob, learning_rate, 5000) 
 
 
 
