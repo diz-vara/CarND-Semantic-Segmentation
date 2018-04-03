@@ -101,7 +101,8 @@ ENV/
 .mypy_cache/
 
 RUNS/
-runs/
+runs/*
+runs/20171122_045143/
 exports/
 data-new/
 

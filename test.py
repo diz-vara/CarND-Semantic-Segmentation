@@ -29,7 +29,6 @@ import helper
 
 labels_diz = lbl.labels_diz
 num_classes = len(labels_diz)
-image_shape=(384,1216)
 
 alfa = (127,) #semi-transparent
 colors = np.array([label.color + alfa for label in labels_diz]).astype(np.uint8)
@@ -78,9 +77,33 @@ def segment_file(image_file):
 
 #plt.imshow(street_im)
 #%%
-#data_folder='/media/D/DIZ/Datasets/KITTI/2011_10_03/2011_10_03_drive_0027_sync/'
-#data_folder='/media/D/DIZ/Datasets/KITTI/2011_09_26/2011_09_26_drive_0084_sync/'
-data_folder='/media/avarfolomeev/storage/Data/voxels/2018_03_08/2018_03_08_drive_0022_sync/'
+dataset = 'London'
+
+if dataset == 'London':
+    data_folder='/media/avarfolomeev/storage/Data/voxels/2018_03_08/2018_03_08_drive_0022_sync/'
+    image_shape=(384,640)
+    dataname = 'image_02/data/'
+    l = glob(os.path.join(data_folder, dataname, '*.png'))
+elif dataset == 'CN':
+    data_folder='/media/avarfolomeev/storage/Data/CN/2017_11_08_06_32_41/'
+    image_shape=(352,640)
+    dataname = 'Collected/'
+    l = glob(os.path.join(data_folder, dataname, '*.jpg'))
+elif dataset == 'KITTI':
+    #data_folder='/media/D/DIZ/Datasets/KITTI/2011_10_03/2011_10_03_drive_0027_sync/'
+    data_folder='/media/D/DIZ/Datasets/KITTI/2011_09_26/2011_09_26_drive_0084_sync/'
+    image_shape=(192,608)
+    dataname = 'image_02/data/'
+    l = glob(os.path.join(data_folder, dataname, '*.png'))
+elif dataset == 'CS':
+    #data_folder='/media/D/DIZ/Datasets/KITTI/2011_10_03/2011_10_03_drive_0027_sync/'
+    data_folder='/media/D/DIZ/Datasets/KITTI/2011_09_26/2011_09_26_drive_0084_sync/'
+    image_shape=(320,640)
+    dataname = 'image_02/data/'
+    l = glob(os.path.join(data_folder, dataname, '*.png'))
+    
+
+
 
 road_name = 'Xroad'
 overlay_name = 'Xoverlay'
@@ -98,14 +121,13 @@ except:
 
 out_shape = (image_shape[0], image_shape[1], num_classes)
 
-l = glob(os.path.join(data_folder, 'image_02/data', '*.png'))
 
 for im_file in l:
     im_out, mask = segment_file(im_file)
-    out_file = im_file.replace('/data/','/../' + overlay_name + '/')
+    out_file = im_file.replace(dataname,overlay_name + '/')
     scipy.misc.imsave(out_file, im_out)
     print(out_file)
-    out_file = im_file.replace('/data/','/../' + road_name + '/')
+    out_file = im_file.replace(dataname,road_name + '/')
     cv2.imwrite(out_file,mask)
 
 #%%
