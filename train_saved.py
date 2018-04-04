@@ -55,6 +55,8 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
         sys.stdout.flush()
         bnum = 0
         for image, label in get_batches_fn(batch_size):
+            image = image[:batch_size]
+            label = label[:batch_size]
             summary, loss = sess.run([train_op, cross_entropy_loss],
                                      feed_dict={input_image:image, 
                                                 corr_label:label,
@@ -87,10 +89,10 @@ export_dir = './exports/' + timestamp;
 
 labels = lbl.labels_diz
 num_classes = len(labels)
-image_shape=(384,1216)
+image_shape=(320,640)
 
 epochs = 150
-batch_size = 5
+batch_size = 4
 
 
 alfa = (127,) #semi-transparent
@@ -131,7 +133,7 @@ loss = tf.reduce_mean(cross_entropy);
 
 
 
-get_batches_fn = helper.gen_batch_function('/media/D/DIZ/Datasets/KITTI/Segmentation/',
+get_batches_fn = helper.gen_batch_function('/media/avarfolomeev/storage/Data/Segmentation/Combined',
                                            image_shape, num_classes)
 
 

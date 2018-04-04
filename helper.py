@@ -110,8 +110,8 @@ def gen_batch_function(data_folder, image_shape, num_classes):
     print("num_classes=",num_classes)
     image_paths, label_paths = get_image_and_labels_list_D(data_folder, 
                                                          'train',
-                                                         'jpeg25',
-                                                         'gt-diz')
+                                                         'image',
+                                                         'gt')
     image_nr = len(image_paths)
     print("Image Number = ",image_nr)
     one_hot = np.zeros((num_classes, num_classes), np.int32 )
@@ -124,10 +124,10 @@ def gen_batch_function(data_folder, image_shape, num_classes):
         :return: Batches of training data
         """
         
-
+    
         image_nr = len(image_paths)
         augmentation_coeff = (1 + 5) * 2
-        total_nr = image_nr * augmentation_coeff;        
+        total_nr = image_nr #* augmentation_coeff;        
         
         indexes = np.arange(total_nr)
         random.shuffle(indexes)
@@ -143,67 +143,58 @@ def gen_batch_function(data_folder, image_shape, num_classes):
                 if ( i >= total_nr):
                     i = i - total_nr; #cycle in case of overflow
                 idx = indexes[i]
-                image_file = image_paths[idx // augmentation_coeff]
-                gt_image_file = label_paths[idx // augmentation_coeff]
-                
-                augmentation_factor = idx % augmentation_coeff;
-                #augmentation - cropping
-                crop_factor = augmentation_factor // 2;
-                mirror_factor = augmentation_factor % 2;
+                image_file = image_paths[idx] # // augmentation_coeff]
+                gt_image_file = label_paths[idx] # // augmentation_coeff]
                 
                 image = scipy.misc.imread(image_file);
-                #print(image_file)
                 #image = cv2.medianBlur(image,5)
                 gt_image = cv2.imread(gt_image_file,-1) #scipy.misc.imread(gt_image_file)*255;
-                if crop_factor == 0:
-                    # do not crop - use origina image
-                    cropped = image;
-                    gt_cropped = gt_image;
-                else:
-                    top = int(image.shape[0]*0.2);
-                    left = int(image.shape[1]*0.2);
-                    bottom = image.shape[0] - top;
-                    right = image.shape[1] - left;
-                    if (crop_factor == 1):
-                        cropped = image[:bottom, :right, :]
-                        gt_cropped = gt_image[:bottom, :right]
-                    elif (crop_factor == 2):
-                        cropped = image[:bottom, left:, :]
-                        gt_cropped = gt_image[:bottom, left:]
-                    elif (crop_factor == 3):
-                        cropped = image[top:, :right, :]
-                        gt_cropped = gt_image[top:, :right]
-                    elif (crop_factor == 4):
-                        cropped = image[top:, left:, :]
-                        gt_cropped = gt_image[top:, left:]
-                    elif (crop_factor == 5):
-                        #central crop
-                        left = left//2;
-                        top = top // 2;
-                        right = left + right;
-                        bottom = bottom + top;
-                        cropped = image[top:bottom, left:right, :]
-                        gt_cropped = gt_image[top:bottom, left:right]
-
                 
-                image = scipy.misc.imresize(cropped, image_shape)
-                gt_image = scipy.misc.imresize(gt_cropped, image_shape, 'nearest')
+                
+                assert(image.shape[:2] == gt_image.shape[:2])                
+    
+                old_shape = image.shape
+                min_scale = np.max((1.,old_shape[1]/(image_shape[1]*2)) )
+                max_scale = np.min((old_shape[1]/image_shape[1], old_shape[0]/image_shape[0]))
+                scale = np.random.rand()*(max_scale-min_scale) + min_scale
 
-                gt_image[gt_image > 35] = 0
-                gt_image[gt_image <  0] = 0
+                image=cv2.resize(image, dsize=None,fx=1./scale, fy=1./scale)
+                gt_image=cv2.resize(gt_image, dsize=None,fx=1./scale, fy=1./scale,
+                                    interpolation=cv2.INTER_NEAREST)
+
+
+                new_size = image.shape[:2]
+                max_x_shift = max(0,new_size[1]-image_shape[1])
+                max_y_shift = max(0,new_size[0]-image_shape[0])
+                
+                x_shift = int(np.random.rand()*max_x_shift)
+                y_shift = int(np.random.rand()*max_y_shift)
+                
+                cropped = image[y_shift:y_shift+image_shape[0], 
+                                x_shift:x_shift+image_shape[1], :]
+                
+                gt_cropped = gt_image[y_shift:y_shift+image_shape[0], 
+                                x_shift:x_shift+image_shape[1]]
+
+                if (np.random.rand() > 0.5):
+                    cropped = np.fliplr(cropped)
+                    gt_cropped = np.fliplr(gt_cropped)
+                    
+    
+                gt_cropped[gt_cropped >= num_classes] = 0
+                gt_cropped[gt_cropped <  0] = 0
                 
                 #augmentation - mirroring
-                if (mirror_factor != 0):
-                    image = np.fliplr(image)
-                    gt_image = np.fliplr(gt_image)
-
-
-                onehot_label = one_hot[gt_image]
-
-
-                images.append(image)
+    
+    
+                onehot_label = one_hot[gt_cropped]
+    
+                #print(image.shape, gt_image.shape)
+    
+                images.append(cropped)
                 gt_images.append(onehot_label)
-
+                
+    
             yield np.array(images), np.array(gt_images)
     return get_batches_fn
 
