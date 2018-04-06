@@ -42,12 +42,13 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     :param learning_rate: TF Placeholder for learning rate
     """
     
+    save_net = '/media/avarfolomeev/storage/Data/Segmentation/net/my2-net';
     #sess.run(tf.global_variables_initializer())
     #saver = tf.train.Saver();
 
     #lr = sess.run(learning_rate)
     #merged = tf.summary.merge_all()
-    lr = 1e-5
+    lr = 1e-4
     min_loss = 1e9
     for epoch in range (epochs):
         print ('epoch {}  '.format(epoch))
@@ -65,14 +66,16 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
             sys.stdout.flush()      
             bnum = bnum + 1                   
         #writer.add_summary(summary, epoch)                          
-        lr = lr * 0.96                            
+        lr = lr * 0.99                            
         print(" Loss = {:g}".format(loss))     
         print()                        
         if (loss < min_loss):
             print("saving at step {:d}".format(epoch+base))     
             min_loss = loss;
-            saver.save(sess, '/media/avarfolomeev/storage/Data/Segmentation/net/my2-net',
+            saver.save(sess, save_net,
                        global_step=epoch+base)
+            fn =  save_net + '-' + str(epoch+base) + '.' + str(loss)
+           
             
 #%%
 #%%
@@ -91,7 +94,7 @@ labels = lbl.labels_diz
 num_classes = len(labels)
 image_shape=(320,640)
 
-epochs = 150
+epochs = 5000
 batch_size = 4
 
 
@@ -106,9 +109,10 @@ sess = tf.Session(config = config)
 
 #saver = tf.train.Saver()
 
+load_net = '/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-6247'
 
-saver = tf.train.import_meta_graph('/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-3029.meta')
-saver.restore(sess,'/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-3029')
+saver = tf.train.import_meta_graph(load_net + '.meta')
+saver.restore(sess,load_net)
 
 
 model = tf.get_default_graph()
@@ -150,7 +154,7 @@ train_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,'layer3')
 
 print('training')
 train_nn(sess, epochs, batch_size, get_batches_fn, train_op,
-         loss, input_image, correct_label, keep_prob, learning_rate, 5000) 
+         loss, input_image, correct_label, keep_prob, learning_rate, 7000) 
 
 
 

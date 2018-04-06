@@ -35,8 +35,8 @@ colors = np.array([label.color + alfa for label in labels_diz]).astype(np.uint8)
 
 sess = tf.Session()
 
-saver = tf.train.import_meta_graph('/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-3029.meta')
-saver.restore(sess,'/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-3029')
+saver = tf.train.import_meta_graph('/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-6247.meta')
+saver.restore(sess,'/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-6247')
 
 model = tf.get_default_graph()
 
@@ -127,7 +127,7 @@ for im_file in l:
     out_file = im_file.replace(dataname,overlay_name + '/')
     scipy.misc.imsave(out_file, im_out)
     print(out_file)
-    out_file = im_file.replace(dataname,road_name + '/')
+    out_file = im_file.replace(dataname,road_name + '/').replace('.jpg','.png')
     cv2.imwrite(out_file,mask)
 
 #%%
