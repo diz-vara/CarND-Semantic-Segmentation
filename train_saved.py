@@ -48,11 +48,11 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
 
     #lr = sess.run(learning_rate)
     #merged = tf.summary.merge_all()
-    lr = 1e-4
-    min_loss = 1e9
+    lr = 1e-5
+    min_loss = 1
     for epoch in range (epochs):
         print ('epoch {}  '.format(epoch))
-        print(" LR = {:f}".format(lr))
+        print(" LR = {:g}".format(lr))
         sys.stdout.flush()
         bnum = 0
         for image, label in get_batches_fn(batch_size):
@@ -66,7 +66,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
             sys.stdout.flush()      
             bnum = bnum + 1                   
         #writer.add_summary(summary, epoch)                          
-        lr = lr * 0.99                            
+        lr = lr * 0.995                            
         print(" Loss = {:g}".format(loss))     
         print()                        
         if (loss < min_loss):
@@ -74,7 +74,10 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
             min_loss = loss;
             saver.save(sess, save_net,
                        global_step=epoch+base)
+            #save empty file with loss value           
             fn =  save_net + '-' + str(epoch+base) + '.' + str(loss)
+            f = open(fn,"wb")
+            f.close()
            
             
 #%%
@@ -109,7 +112,7 @@ sess = tf.Session(config = config)
 
 #saver = tf.train.Saver()
 
-load_net = '/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-6247'
+load_net = '/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-20497'
 
 saver = tf.train.import_meta_graph(load_net + '.meta')
 saver.restore(sess,load_net)
@@ -154,7 +157,7 @@ train_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,'layer3')
 
 print('training')
 train_nn(sess, epochs, batch_size, get_batches_fn, train_op,
-         loss, input_image, correct_label, keep_prob, learning_rate, 7000) 
+         loss, input_image, correct_label, keep_prob, learning_rate, 25000) 
 
 
 

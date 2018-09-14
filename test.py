@@ -35,8 +35,11 @@ colors = np.array([label.color + alfa for label in labels_diz]).astype(np.uint8)
 
 sess = tf.Session()
 
-saver = tf.train.import_meta_graph('/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-6247.meta')
-saver.restore(sess,'/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-6247')
+load_net = '/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-25794'
+
+saver = tf.train.import_meta_graph(load_net + '.meta')
+saver.restore(sess,load_net)
+
 
 model = tf.get_default_graph()
 
@@ -77,10 +80,10 @@ def segment_file(image_file):
 
 #plt.imshow(street_im)
 #%%
-dataset = 'London'
+dataset = 'LA'
 
 if dataset == 'London':
-    data_folder='/media/avarfolomeev/storage/Data/voxels/2018_03_08/2018_03_08_drive_0022_sync/'
+    data_folder='/media/avarfolomeev/storage/Data/voxels/2018_03_08/L21/'
     image_shape=(384,640)
     dataname = 'image_02/data/'
     l = glob(os.path.join(data_folder, dataname, '*.png'))
@@ -100,6 +103,21 @@ elif dataset == 'CS':
     data_folder='/media/D/DIZ/Datasets/KITTI/2011_09_26/2011_09_26_drive_0084_sync/'
     image_shape=(320,640)
     dataname = 'image_02/data/'
+    l = glob(os.path.join(data_folder, dataname, '*.png'))
+elif dataset == 'spb-R1':
+    data_folder='/media/avarfolomeev/storage/Data/voxels/20180525/ride01/'
+    image_shape=(384,640)
+    dataname = 'image_02/data/'
+    l = glob(os.path.join(data_folder, dataname, '*.png'))
+elif dataset == 'NavInfo':
+    data_folder='/media/avarfolomeev/storage/Data/voxels/NavInfo/'
+    image_shape=(384,640)
+    dataname = 'Screens/'
+    l = glob(os.path.join(data_folder, dataname, '*.png'))
+elif dataset == 'LA':
+    data_folder='/media/avarfolomeev/storage/Data/voxels/20180908/test8_6/argus_cam_5/'
+    image_shape=(384,640)
+    dataname = 'data/'
     l = glob(os.path.join(data_folder, dataname, '*.png'))
     
 
