@@ -48,7 +48,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
 
     #lr = sess.run(learning_rate)
     #merged = tf.summary.merge_all()
-    lr = 1e-5
+    lr = 5e-5
     min_loss = 1
     for epoch in range (epochs):
         print ('epoch {}  '.format(epoch))
@@ -66,7 +66,7 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
             sys.stdout.flush()      
             bnum = bnum + 1                   
         #writer.add_summary(summary, epoch)                          
-        lr = lr * 0.995                            
+        lr = lr * 0.9975                            
         print(" Loss = {:g}".format(loss))     
         print()                        
         if (loss < min_loss):
@@ -98,7 +98,7 @@ num_classes = len(labels)
 image_shape=(320,640)
 
 epochs = 5000
-batch_size = 4
+batch_size = 5
 
 
 alfa = (127,) #semi-transparent
@@ -112,7 +112,7 @@ sess = tf.Session(config = config)
 
 #saver = tf.train.Saver()
 
-load_net = '/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-20497'
+load_net = '/media/avarfolomeev/storage/Data/Segmentation/net/my2-net-3543'
 
 saver = tf.train.import_meta_graph(load_net + '.meta')
 saver.restore(sess,load_net)
@@ -129,12 +129,20 @@ learning_rate = model.get_tensor_by_name('learning_rate:0')
 
 assert(nn_output.shape[-1] == num_classes)
 
+labels = tf.reshape(correct_label, [-1,num_classes])
+labels0 = labels[:,0];
+
+class_filter = tf.squeeze(tf.where(tf.not_equal(labels0,1)),1)
+
 
 logits = tf.reshape(nn_output,(-1,num_classes))
+print(labels0.get_shape(), logits.get_shape())
 
+gt = tf.gather(labels,class_filter)
+prediction = tf.gather(logits,class_filter)
 
-cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=correct_label,
-                                                        logits = logits,
+cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=gt,
+                                                        logits = prediction,
                                                         name = "cross-ent")
 loss = tf.reduce_mean(cross_entropy);
 
@@ -157,11 +165,11 @@ train_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES,'layer3')
 
 print('training')
 train_nn(sess, epochs, batch_size, get_batches_fn, train_op,
-         loss, input_image, correct_label, keep_prob, learning_rate, 25000) 
+         loss, input_image, correct_label, keep_prob, learning_rate, 30000) 
 
 
 
 
 #if __name__ == '__main__':
 #    retrain()
-            
+           
