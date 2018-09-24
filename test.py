@@ -52,12 +52,14 @@ logits = tf.reshape(nn_output,(-1,num_classes))
 
 #%%
 
-def segment_file(image_file):
+def segment_file(image_file, table = None):
     image0 = scipy.misc.imread(image_file)
     original_shape = image0.shape
 
     image = scipy.misc.imresize(image0, image_shape)
 
+    if (not table is None):
+        image = cv2.LUT(image, table)
     image = cv2.GaussianBlur(image,(3,3),2)
     
     im_softmax = sess.run([tf.nn.softmax(logits)], {keep_prob: 1.0, input_image: [image]})
@@ -115,7 +117,7 @@ elif dataset == 'NavInfo':
     dataname = 'Screens/'
     l = glob(os.path.join(data_folder, dataname, '*.png'))
 elif dataset == 'LA':
-    data_folder='/media/avarfolomeev/storage/Data/voxels/20180908/test8_6/argus_cam_5/'
+    data_folder='/media/avarfolomeev/storage/Data/voxels/20180907/test7_2/argus_cam_3/'
     image_shape=(384,640)
     dataname = 'data/'
     l = glob(os.path.join(data_folder, dataname, '*.png'))
@@ -139,9 +141,10 @@ except:
 
 out_shape = (image_shape[0], image_shape[1], num_classes)
 
+table = build_lut(1.7)
 
 for im_file in l:
-    im_out, mask = segment_file(im_file)
+    im_out, mask = segment_file(im_file,table)
     out_file = im_file.replace(dataname,overlay_name + '/')
     scipy.misc.imsave(out_file, im_out)
     print(out_file)
@@ -150,3 +153,6 @@ for im_file in l:
 
 #%%
 
+def build_lut (invgamma):
+    table = np.array([ ((i/255.0) ** invgamma) * 255 for i in np.arange(0,256)]).astype("uint8")    
+    return table
