@@ -22,6 +22,10 @@ class DLProgress(tqdm):
         self.last_block = block_num
 
 
+def build_lut (invgamma):
+    table = np.array([ ((i/255.0) ** invgamma) * 255 for i in np.arange(0,256)]).astype("uint8")    
+    return table
+
 def maybe_download_pretrained_vgg(data_dir):
     """
     Download and extract pretrained vgg model if it doesn't exist
@@ -150,7 +154,7 @@ def gen_batch_function(data_folder, image_shape, num_classes):
                 #image = cv2.medianBlur(image,5)
                 gt_image = cv2.imread(gt_image_file,-1) #scipy.misc.imread(gt_image_file)*255;
                 
-                
+                #print(image_file)
                 assert(image.shape[:2] == gt_image.shape[:2])                
     
                 old_shape = image.shape
@@ -172,6 +176,12 @@ def gen_batch_function(data_folder, image_shape, num_classes):
                 
                 cropped = image[y_shift:y_shift+image_shape[0], 
                                 x_shift:x_shift+image_shape[1], :]
+
+
+                gamma = np.random.rand()/2 + 0.75 #0.75 .... 1.25
+                table = build_lut(gamma)
+                
+                cropped = cv2.LUT(cropped, table)
                 
                 gt_cropped = gt_image[y_shift:y_shift+image_shape[0], 
                                 x_shift:x_shift+image_shape[1]]
